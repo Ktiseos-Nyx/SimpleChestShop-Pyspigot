@@ -117,7 +117,12 @@ class ChestShop(JavaPlugin, Listener):
             self.shop_chest_material = Material.valueOf(material_name.upper())
         except ValueError:
             self.shop_chest_material = DEFAULT_SHOP_CHEST_MATERIAL
-            self.getLogger().warning("Invalid shop_chest_material in config: '{}'. Using default: '{}'".format(material_name, DEFAULT_SHOP_CHEST_MATERIAL.name()))
+            self.getLogger().warning(
+    "Invalid shop_chest_material in config: '{}'. Using default: '{}'".format(
+        material_name, 
+        DEFAULT_SHOP_CHEST_MATERIAL.name()
+    )
+)
 
         self.shop_identifier_sign_text = config.get(SHOP_IDENTIFIER_SIGN_TEXT_CONFIG_KEY, DEFAULT_SHOP_IDENTIFIER_SIGN_TEXT)
 
