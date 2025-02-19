@@ -12,7 +12,7 @@ from org.bukkit.event import Listener
 from org.bukkit.event import EventHandler
 from org.bukkit.event.player import PlayerInteractEvent
 from org.bukkit.event.block import BlockBreakEvent
-from org.bukkit.Material import Material
+from org.bukkit import Material
 from org.bukkit.block import Block
 from org.bukkit.entity import Player
 from org.bukkit.inventory import ItemStack
@@ -205,7 +205,9 @@ class ChestShop(JavaPlugin, Listener):
             price = float(sign.getLine(2))  # Read the third line for price
             owner = player.getName()  # Get the shop owner's name
             location = str(chest_block.getLocation())  # Get the location as string
-            self.add_shop(owner, location, item, price)  # Add shop to database
+            
+            # Add shop to the database
+            self.add_shop(owner, location, item, price)  # Save shop details
             player.sendMessage(ChatColor.GREEN + "Shop created: Item: {}, Price: {}".format(item, price))
         else:
             player.sendMessage(ChatColor.RED + "No sign found above this chest.")
