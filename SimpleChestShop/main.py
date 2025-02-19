@@ -1,29 +1,26 @@
-# coding=utf-8
-import os  # Standard library imports FIRST
-import pyspigot as ps  # Correct pyspigot import
-import sqlite3  # Import SQLite module
+# Standard library imports
+import os
+import sqlite3
 
-# Third-party plugin API imports (Vault, Towny)
-from net.milkbowl.vault2.economy import Economy  # CORRECT Vault import (note 'vault2')
-from com.palmergames.bukkit.towny import TownyUniverse # Towny API
+# Third-party imports
+import pyspigot as ps
+from net.milkbowl.vault2.economy import Economy
+from com.palmergames.bukkit.towny import TownyUniverse
 
+# Bukkit API imports
 from org.bukkit.plugin.java import JavaPlugin
-from org.bukkit.event import Listener
-from org.bukkit.event import EventHandler
+from org.bukkit.event import Listener, EventHandler
 from org.bukkit.event.player import PlayerInteractEvent
 from org.bukkit.event.block import BlockBreakEvent
 from org.bukkit import Material
-from org.bukkit.block import Block
+from org.bukkit.block import Block, Sign
 from org.bukkit.entity import Player
 from org.bukkit.inventory import ItemStack
 from org.bukkit.inventory.meta import ItemMeta
 from org.bukkit.ChatColor import ChatColor
 from org.bukkit import Location
-from org.bukkit.block import Sign
-from org.bukkit.command import Command # Import Command and CommandSender for command handling
-from org.bukkit.command import CommandSender
 
-# Yaml Config
+# YAML Config
 import ruamel.yaml as yaml
 
 # LuckPerms
@@ -371,16 +368,16 @@ class ChestShop(JavaPlugin, Listener):
         if not isinstance(sender, Player):  # Command can only be used by players
             sender.sendMessage(ChatColor.RED + "This command can only be used by players in-game.")
             return True
-
+    
         player = sender
         if not self.luckperms.getUserManager().getUser(player.getUniqueId()).getCachedData().getPermissionData().checkPermission("simplechestshop.setprice"):
             player.sendMessage(ChatColor.RED + "You do not have permission to set prices.")
             return True
-
+    
         if len(args) < 2:
             player.sendMessage(ChatColor.RED + "Usage: /setprice <location> <new_price>")
             return True
-
+    
         location = args[0]  # Get location from command arguments
         new_price = float(args[1])  # Get new price from command arguments
         shops = self.get_shops()  # Retrieve all shops from the database
@@ -392,6 +389,18 @@ class ChestShop(JavaPlugin, Listener):
                 return
         player.sendMessage(ChatColor.RED + "No shop found at that location.")
         return True  # Command handled successfully
+
+    location = args[0]  # Get location from command arguments
+    new_price = float(args[1])  # Get new price from command arguments
+    shops = self.get_shops()  # Retrieve all shops from the database
+    for shop in shops:
+        if shop[2] == location:
+            self.remove_shop(shop[0])  # Remove old shop entry
+            self.add_shop(shop[1], location, shop[3], new_price)  # Add shop with new price
+            player.sendMessage(ChatColor.GREEN + "Price updated for shop at {}: New Price: {}".format(location, new_price))
+            return
+    player.sendMessage(ChatColor.RED + "No shop found at that location.")
+    return True  # Command handled successfully
 
     def is_in_valid_town(self, player):
         # Get the Towny player object
