@@ -244,10 +244,10 @@ class ChestShop(JavaPlugin, Listener):
     # --- Vault Economy Setup (Placeholder Function) ---
     def setup_economy(self):
         """Sets up Vault economy integration if Vault is available."""
-        if self.getServer().getPluginManager().getPlugin("Vault") == None:
+        if self.getServer().getPluginManager().getPlugin("Vault") is None:
             return False
-        rsp = self.getServer().getServicesManager().getRegistration(Economy.class)
-        if rsp == None:
+        rsp = self.getServer().getServicesManager().getRegistration(Economy)
+        if rsp is None:
             return False
         self.getLogger().info("Vault Economy service found: {}".format(rsp.getProvider().getName())) # Log Vault provider
         return rsp.getProvider()
