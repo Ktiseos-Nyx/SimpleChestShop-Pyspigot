@@ -13,10 +13,16 @@ shop_chest_material: CHEST
 # but this setting will be used when sign detection is added.
 shop_identifier_sign_text: "[Shop]"
 
-# --- Future Configuration Options (Not yet implemented in the plugin) ---
-# Example of potential future configuration options you might add:
+# --- Future Configuration Options ---
 
-# shop_currency_type: "EMERALD"  # Example: Currency for shops (EMERALD, DIAMOND, etc.)
-# default_buy_price: 10         # Example: Default buy price for new shops
-# default_sell_price: 5        # Example: Default sell price for new shops
-# allow_admin_shops: false      # Example: Allow admin-created shops?
+# Currency type for shops (e.g., EMERALD, DIAMOND, etc.)
+shop_currency_type: "EMERALD"
+
+# Default buy price for new shops
+default_buy_price: 10
+
+# Default sell price for new shops
+default_sell_price: 5
+
+# Allow admin-created shops
+allow_admin_shops: false
