@@ -6,6 +6,7 @@ import sqlite3
 import pyspigot as ps
 from net.milkbowl.vault2.economy import Economy
 from com.palmergames.bukkit.towny import TownyUniverse
+from net.milkbowl.vaultunlocked.api import VaultUnlockedAPI
 
 # Bukkit API imports
 from org.bukkit.plugin.java import JavaPlugin
@@ -25,6 +26,16 @@ import ruamel.yaml as yaml
 
 # LuckPerms
 from net.luckperms.api import LuckPerms
+
+# Placeholder API
+from me.clip.placeholderapi import PlaceholderAPI
+
+# GUI imports
+from org.bukkit import Bukkit
+from org.bukkit.inventory import Inventory
+from org.bukkit.event.inventory import InventoryType
+from org.bukkit.event.inventory import InventoryClickEvent
+from org.bukkit.event.inventory import InventoryCloseEvent
 
 CONFIG_FILE = "config.yml"
 SHOP_CHEST_MATERIAL_CONFIG_KEY = "shop_chest_material"
@@ -64,6 +75,13 @@ class ChestShop(JavaPlugin, Listener):
                 location TEXT,
                 item TEXT,
                 price REAL
+            )
+        ''')
+        # Create gui_items table if it doesn't exist
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS gui_items (
+                slot INTEGER PRIMARY KEY,
+                material_name TEXT
             )
         ''')
         self.db_connection.commit()  # Commit changes
@@ -122,6 +140,13 @@ class ChestShop(JavaPlugin, Listener):
 )
 
         self.shop_identifier_sign_text = config.get(SHOP_IDENTIFIER_SIGN_TEXT_CONFIG_KEY, DEFAULT_SHOP_IDENTIFIER_SIGN_TEXT)
+
+        self.allow_admin_shops = config.get("allow_admin_shops", False)
+
+        # Load GUI configuration
+        self.gui_title = config.get("gui_title", "&aChest Shop")
+        self.gui_size = config.get("gui_size", 27)
+        self.default_items = config.get("default_items")
 
         self.config = config
         self.getLogger().info("Configuration loaded from '{}'".format(CONFIG_FILE))
@@ -192,12 +217,19 @@ class ChestShop(JavaPlugin, Listener):
                 for shop in shops:
                     if shop[2] == str(location):  # Check if location matches
                         player.sendMessage(ChatColor.GREEN + "Shop found: Item: {}, Price: {}".format(shop[3], shop[4]))
+                        # Implement VaultUnlocked API for handling transactions
+                        vault_unlocked_api = VaultUnlockedAPI()
+                        if vault_unlocked_api.hasEnoughMoney(player, shop[4]):
+                            vault_unlocked_api.withdrawMoney(player, shop[4])
+                            player.sendMessage(ChatColor.GREEN + "You have purchased the item for ${}".format(shop[4]))
+                        else:
+                            player.sendMessage(ChatColor.RED + "You do not have enough money to purchase this item.")
                         return
                 player.sendMessage(ChatColor.RED + "No shop found at this location.")
             else:
-                player.sendMessage(ChatColor.RED + "This sign does not identify a shop.")
+                player.sendMessage(ChatColor.YELLOW + "This is not a valid shop sign.")
         else:
-            player.sendMessage(ChatColor.RED + "No sign found above this chest.")
+            player.sendMessage(ChatColor.YELLOW + "No sign found above this chest.")
 
     def create_shop_from_sign(self, player, chest_block):
         sign_block = chest_block.getRelative(0, 1, 0)  # Get the block above the chest
@@ -261,6 +293,8 @@ class ChestShop(JavaPlugin, Listener):
             return self.handle_shopinfo_command(sender, args)  # Call handler for /shopinfo command
         elif command.getName().lower() == "setprice":
             return self.handle_setprice_command(sender, args)  # Call handler for /setprice command
+        elif command.getName().lower() == "shopgui":
+            return self.handle_shopgui_command(sender, args)  # Call handler for /shopgui command
         return False # Return false if command is not handled
 
     def handle_removeshop_command(self, sender, args):
@@ -390,18 +424,6 @@ class ChestShop(JavaPlugin, Listener):
         player.sendMessage(ChatColor.RED + "No shop found at that location.")
         return True  # Command handled successfully
 
-    location = args[0]  # Get location from command arguments
-    new_price = float(args[1])  # Get new price from command arguments
-    shops = self.get_shops()  # Retrieve all shops from the database
-    for shop in shops:
-        if shop[2] == location:
-            self.remove_shop(shop[0])  # Remove old shop entry
-            self.add_shop(shop[1], location, shop[3], new_price)  # Add shop with new price
-            player.sendMessage(ChatColor.GREEN + "Price updated for shop at {}: New Price: {}".format(location, new_price))
-            return
-    player.sendMessage(ChatColor.RED + "No shop found at that location.")
-    return True  # Command handled successfully
-
     def is_in_valid_town(self, player):
         # Get the Towny player object
         towny_player = TownyUniverse.getPlayer(player.getName())
@@ -412,3 +434,69 @@ class ChestShop(JavaPlugin, Listener):
         if towny_player.hasTown():
             return True  # Player is in a valid town
         return False  # Player is not in a town
+
+    def open_shop_gui(self, player):
+        # Calculate the number of rows based on gui_size
+        num_rows = self.gui_size / 9
+        if not (num_rows == 1 or num_rows == 2 or num_rows == 3 or num_rows == 4 or num_rows == 5 or num_rows == 6):
+            self.getLogger().warning("Invalid gui_size in config.yml. Must be a multiple of 9 between 9 and 54. Defaulting to 27.")
+            self.gui_size = 27
+
+        # Create a new inventory with the configured size
+        inventory = Bukkit.createInventory(None, self.gui_size, ChatColor.translateAlternateColorCodes('&', self.gui_title))
+
+        # Add default items to the inventory
+        if self.default_items:
+            for slot, item_name in self.default_items.items():
+                material = Material.getMaterial(item_name)
+                if material:
+                    item_stack = ItemStack(material, 1)
+                    inventory.setItem(int(slot), item_stack)
+
+        # Open the inventory for the player
+        player.openInventory(inventory)
+
+    @EventHandler
+    def on_inventory_click(self, event):
+        if event.getInventory().getName() == ChatColor.translateAlternateColorCodes('&', self.gui_title):
+            event.setCancelled(True)  # Prevent players from taking items
+
+            player = event.getWhoClicked()
+            clicked_item = event.getCurrentItem()
+
+            if clicked_item is not None and clicked_item.getType() == Material.DIAMOND:
+                # Perform the purchase
+                player.sendMessage(ChatColor.GREEN + "You clicked on a diamond!")
+
+    @EventHandler
+    def on_inventory_close(self, event):
+        if event.getInventory().getName() == ChatColor.translateAlternateColorCodes('&', self.gui_title):
+            player = event.getPlayer()
+            inventory = event.getInventory()
+
+            # Gather items from the inventory
+            for slot in range(inventory.getSize()):
+                item_stack = inventory.getItem(slot)
+                if item_stack is not None:
+                    material_name = item_stack.getType().name()
+                    # Save the item configuration to the database
+                    self.save_item_to_database(slot, material_name)
+
+    def save_item_to_database(self, slot, material_name):
+        cursor = self.db_connection.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO gui_items (slot, material_name)
+            VALUES (?, ?)
+        ''', (slot, material_name))
+        self.db_connection.commit()
+        cursor.close()
+
+    def handle_shopgui_command(self, sender, args):
+        """Handles the /shopgui command."""
+        if not isinstance(sender, Player):  # Command can only be used by players
+            sender.sendMessage(ChatColor.RED + "This command can only be used by players in-game.")
+            return True
+
+        player = sender
+        self.open_shop_gui(player)
+        return True  # Command handled successfully
