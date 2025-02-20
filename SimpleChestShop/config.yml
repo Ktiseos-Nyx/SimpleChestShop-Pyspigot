@@ -26,3 +26,11 @@ default_sell_price: 5
 
 # Allow admin-created shops
 allow_admin_shops: false
+
+# GUI Configuration
+gui_title: "&aChest Shop"
+gui_size: 27  # Size of the inventory (9, 18, 27, 36, 45, or 54)
+default_items:
+  0: DIAMOND
+  1: IRON_INGOT
+  2: GOLD_INGOT
