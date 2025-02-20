@@ -32,9 +32,10 @@ Simple Chest Shop is ideal for servers that value simplicity, ease of use, and a
 - [Spigot](https://www.spigotmc.org/)
 - [Geyser](https://geysermc.org/)
 - TownyAdvanced
-- Vault Provider
+- VaultUnlocked
+- Placeholder API
 - LuckPerms
-- Minecraft!
+- Minecraft 1.21.3 (tested)
 
 
 ## Installation 
