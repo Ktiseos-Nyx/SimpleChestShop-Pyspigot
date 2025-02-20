@@ -14,6 +14,16 @@ Simple Chest Shop is a user-friendly and efficient chest shop plugin for Py-Spig
 
 Inspired by the core functionality of classic chest shop plugins, Simple Chest Shop provides a clean and intuitive experience, prioritizing ease of use and essential features for both players and server administrators.
 
+This plugin was developed for 0FTH3N1GHT's development server, and current development is based on the specs of that server. If you're looking for platform agnostic code, either use the issues tab above, or fork and contribute. 
+
+## Languages 
+
+English only for now, I don't trust my own natural language so unless "TYPO-ESE" is a language, English is it for now.  In future i'll try and see how that works otherwise.
+
+### Why PySpigot? 
+
+Current I do not know how to code much outside of HTML, Python, and CSS.  I know how to poke around a few other formats of web development, but nothing solid. Due to my freelancing in and out of AI/ML i learned a little bit about python, and the natural language feature of it makes it easier for me to understand.  I've been using the combination of lack of smarts, and studying at what feels like 3am all the API's I need to include.  While the use of LLM's has been employed, trust me, this isn't just "telling GPT to make it" - i'm checking all the code, i'm linting where i'm able. I'm learning a long the way. 
+
 ## Why Choose Simple Chest Shop?
 
 Many existing chest shop plugins, while powerful, can be overwhelming with their extensive command sets, intricate configurations, and steep learning curves.  Simple Chest Shop takes a different approach, focusing on providing the *essential* chest shop experience in a way that is:
