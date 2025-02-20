@@ -20,7 +20,7 @@ This plugin was developed for 0FTH3N1GHT's development server, and current devel
 
 English only for now, I don't trust my own natural language so unless "TYPO-ESE" is a language, English is it for now.  In future i'll try and see how that works otherwise.
 
-### Why PySpigot? 
+## Why PySpigot? 
 
 Current I do not know how to code much outside of HTML, Python, and CSS.  I know how to poke around a few other formats of web development, but nothing solid. Due to my freelancing in and out of AI/ML i learned a little bit about python, and the natural language feature of it makes it easier for me to understand.  I've been using the combination of lack of smarts, and studying at what feels like 3am all the API's I need to include.  While the use of LLM's has been employed, trust me, this isn't just "telling GPT to make it" - i'm checking all the code, i'm linting where i'm able. I'm learning a long the way. 
 
