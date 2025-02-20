@@ -34,3 +34,18 @@ default_items:
   0: DIAMOND
   1: IRON_INGOT
   2: GOLD_INGOT
+
+# Messages
+message_shop_created: "&aShop created for {item}"
+message_admin_shop_created: "&aAdmin shop created for {item}"
+message_no_permission: "&cYou do not have permission to perform this action."
+message_invalid_arguments: "&cInvalid arguments. Usage: {usage}"
+
+# Currency
+currency_symbol: "$"
+
+# Feature Toggles
+enable_towny_integration: true
+enable_luckperms_integration: true
+enable_geyser_integration: true
+enable_floodgate_integration: true
