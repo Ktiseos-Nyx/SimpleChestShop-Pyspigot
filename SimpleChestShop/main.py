@@ -1,5 +1,6 @@
 import os
 import sqlite3
+from java.sql import Connection, DriverManager, SQLException
 
 # LuckPerms
 from net.luckperms.api import LuckPerms
@@ -41,6 +42,9 @@ from org.bukkit import ChatColor
 from org.geysermc.api.GeyserApi import GeyserApi
 from org.geysermc.floodgate.api.FloodgateApi import FloodgateApi
 
+# Pyspigot Configuration Manager
+from pyspigot import ConfigurationManager
+
 # YAML Config
 import ruamel.yaml as yaml
 
@@ -54,7 +58,7 @@ DEFAULT_SHOP_IDENTIFIER_SIGN_TEXT = "[Shop]"
 class ChestShop(JavaPlugin, Listener):
     def __init__(self):
         super(ChestShop, self).__init__()
-        # Initialize instance variables
+        self.config_manager = ConfigurationManager(self)
         self.db_connection = None
         self.shop_chest_material = None
         self.shop_identifier_sign_text = None
@@ -78,7 +82,6 @@ class ChestShop(JavaPlugin, Listener):
 
     def onEnable(self):
         # Called when the plugin is enabled
-        self.saveDefaultConfig()  # Save default configuration
         self.load_plugin_config()  # Load plugin configuration
         self.setup_database()  # Setup database
         self.load_shop_locations()  # Load shop locations from database
@@ -94,73 +97,54 @@ class ChestShop(JavaPlugin, Listener):
             self.db_connection.close()  # Close database connection
 
     def load_plugin_config(self):
-        # Load configuration from config.yml
-        config = self.getConfig()
-        self.shop_chest_material = Material.getMaterial(config.getString(SHOP_CHEST_MATERIAL_CONFIG_KEY, DEFAULT_SHOP_CHEST_MATERIAL))
-        self.shop_identifier_sign_text = config.getString(SHOP_IDENTIFIER_SIGN_TEXT_CONFIG_KEY, DEFAULT_SHOP_IDENTIFIER_SIGN_TEXT)
-        self.allow_admin_shops = config.getBoolean("allow_admin_shops", False)
-        
+        # Load configuration from config.yml using the Configuration Manager
+        self.config_manager.load_config("config.yml")
+        self.shop_chest_material = self.config_manager.get("shop_chest_material", "CHEST")
+        self.shop_identifier_sign_text = self.config_manager.get("shop_identifier_sign_text", "[Shop]")
+        self.allow_admin_shops = self.config_manager.get("allow_admin_shops", False)
         # Load GUI configuration
-        self.gui_title = config.getString("gui_title", "&aChest Shop")
-        self.gui_size = config.getInt("gui_size", 27)
-        self.default_items = config.get("default_items", {})
-
+        self.gui_title = self.config_manager.get("gui_title", "&aChest Shop")
+        self.gui_size = self.config_manager.get("gui_size", 27)
+        self.default_items = self.config_manager.get("default_items", {})
         # Load messages
-        self.message_shop_created = config.getString("message_shop_created", "&aShop created for {item}")
-        self.message_admin_shop_created = config.getString("message_admin_shop_created", "&aAdmin shop created for {item}")
-        self.message_no_permission = config.getString("message_no_permission", "&cYou do not have permission to perform this action.")
-        self.message_invalid_arguments = config.getString("message_invalid_arguments", "&cInvalid arguments. Usage: {usage}")
-
+        self.message_shop_created = self.config_manager.get("message_shop_created", "&aShop created for {item}")
+        self.message_admin_shop_created = self.config_manager.get("message_admin_shop_created", "&aAdmin shop created for {item}")
+        self.message_no_permission = self.config_manager.get("message_no_permission", "&cYou do not have permission to perform this action.")
+        self.message_invalid_arguments = self.config_manager.get("message_invalid_arguments", "&cInvalid arguments. Usage: {usage}")
         # Load currency
-        self.currency_symbol = config.getString("currency_symbol", "$")
-
+        self.currency_symbol = self.config_manager.get("currency_symbol", "$")
         # Load feature toggles
-        self.enable_towny_integration = config.getBoolean("enable_towny_integration", True)
-        self.enable_luckperms_integration = config.getBoolean("enable_luckperms_integration", True)
-        self.enable_geyser_integration = config.getBoolean("enable_geyser_integration", True)
-        self.enable_floodgate_integration = config.getBoolean("enable_floodgate_integration", True)
-        self.config = config
+        self.enable_towny_integration = self.config_manager.get("enable_towny_integration", True)
+        self.enable_luckperms_integration = self.config_manager.get("enable_luckperms_integration", True)
+        self.enable_geyser_integration = self.config_manager.get("enable_geyser_integration", True)
+        self.enable_floodgate_integration = self.config_manager.get("enable_floodgate_integration", True)
         self.getLogger().info("Configuration loaded from '{}'".format(CONFIG_FILE))
-        self.getLogger().info("Shop chest material: '{}'".format(self.shop_chest_material.name()))
+        self.getLogger().info("Shop chest material: '{}'".format(self.shop_chest_material))
         self.getLogger().info("Shop identifier sign text: '{}'".format(self.shop_identifier_sign_text))
 
     def save_plugin_config(self):
         # Save current configuration to config.yml
-        config = self.getConfig()
-        config.set("shop_chest_material", self.shop_chest_material.name())
-        config.set("shop_identifier_sign_text", self.shop_identifier_sign_text)
-        config.set("allow_admin_shops", self.allow_admin_shops)
-        config.set("gui_title", self.gui_title)
-        config.set("gui_size", self.gui_size)
-        config.set("default_items", self.default_items)
-        self.saveConfig()
+        self.config_manager.set("shop_chest_material", self.shop_chest_material)
+        self.config_manager.set("shop_identifier_sign_text", self.shop_identifier_sign_text)
+        self.config_manager.set("allow_admin_shops", self.allow_admin_shops)
+        self.config_manager.set("gui_title", self.gui_title)
+        self.config_manager.set("gui_size", self.gui_size)
+        self.config_manager.set("default_items", self.default_items)
+        self.config_manager.save_config("config.yml")
         self.getLogger().info("Configuration saved to '{}'".format(CONFIG_FILE))
 
     def setup_database(self):
-        # Setup the database for storing shop information
-        db_file = os.path.join(self.getDataFolder(), 'shops.db')
-        self.db_connection = sqlite3.connect(db_file)
-        cursor = self.db_connection.cursor()
-        # Create shops table if it doesn't exist
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS shops (
-                id INTEGER PRIMARY KEY,
-                owner TEXT,
-                location TEXT UNIQUE,
-                item TEXT,
-                price REAL,
-                is_admin_shop INTEGER
-            )
-        ''')
-        # Create gui_items table if it doesn't exist
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS gui_items (
-                slot INTEGER PRIMARY KEY,
-                material_name TEXT
-            )
-        ''')
-        self.db_connection.commit()  # Commit changes
-        cursor.close()
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
+            statement = self.db_connection.createStatement()
+            create_table_sql = "CREATE TABLE IF NOT EXISTS shops (id INTEGER PRIMARY KEY AUTOINCREMENT, owner TEXT, location TEXT UNIQUE, item TEXT, price REAL, is_admin_shop INTEGER)"
+            statement.executeUpdate(create_table_sql)
+            create_table_sql = "CREATE TABLE IF NOT EXISTS gui_items (slot INTEGER PRIMARY KEY, material_name TEXT)"
+            statement.executeUpdate(create_table_sql)
+            self.db_connection.close()
+            self.getLogger().info("Database and tables created successfully.")
+        except SQLException as e:
+            self.getLogger().severe("An error occurred: {}".format(e.getMessage()))
 
     def load_shop_locations(self):
         # Load shop locations from the database into memory
