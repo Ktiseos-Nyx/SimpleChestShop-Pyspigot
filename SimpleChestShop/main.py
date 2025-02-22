@@ -9,6 +9,34 @@ from java.util.logging import Logger
 # from java.util.logging import Level #Unused
 # from java.util.logging import LogRecord #Unused
 
+# Bukkit API imports
+from org.bukkit.plugin.java import JavaPlugin
+from org.bukkit import Material
+from org.bukkit.block import Sign
+from org.bukkit.entity import Player
+from org.bukkit.event import EventHandler, Listener
+from org.bukkit.inventory import ItemStack
+from org.bukkit import Bukkit
+from org.bukkit.event.player import PlayerInteractEvent
+from org.bukkit.event.block import BlockBreakEvent
+from org.bukkit.event.block import SignChangeEvent
+from org.bukkit.command import CommandSender
+from org.bukkit import ChatColor
+# from org.bukkit.permissions import Permission
+from org.bukkit.plugin import RegisteredServiceProvider
+
+# GUI imports
+from org.bukkit.inventory import Inventory
+from org.bukkit.event.inventory import InventoryType
+from org.bukkit.event.inventory import InventoryClickEvent
+from org.bukkit.event.inventory import InventoryCloseEvent
+
+# Pyspigot Configuration Manager
+# from pyspigot import ConfigurationManager
+
+# YAML Config
+#import ruamel.yaml as yaml
+
 # LuckPerms
 try:
     from net.luckperms.api import LuckPerms
@@ -38,33 +66,6 @@ except ImportError:
 from com.palmergames.bukkit.towny import TownyUniverse
 # from net.milkbowl.vaultunlocked.api import VaultUnlockedAPI
 
-# Bukkit API imports
-from org.bukkit.plugin.java import JavaPlugin
-from org.bukkit import Material
-from org.bukkit.block import Sign
-from org.bukkit.entity import Player
-from org.bukkit.event import EventHandler, Listener
-from org.bukkit.inventory import ItemStack
-from org.bukkit import Bukkit
-from org.bukkit.event.player import PlayerInteractEvent
-from org.bukkit.event.block import BlockBreakEvent
-from org.bukkit.event.block import SignChangeEvent
-from org.bukkit.command import CommandSender
-from org.bukkit import ChatColor
-# from org.bukkit.permissions import Permission
-from org.bukkit.plugin import RegisteredServiceProvider
-
-# GUI imports
-from org.bukkit.inventory import Inventory
-from org.bukkit.event.inventory import InventoryType
-from org.bukkit.event.inventory import InventoryClickEvent
-from org.bukkit.event.inventory import InventoryCloseEvent
-
-# Pyspigot Configuration Manager
-# from pyspigot import ConfigurationManager
-
-# YAML Config
-#import ruamel.yaml as yaml
 
 CONFIG_FILE = "config.yml"
 SHOP_CHEST_MATERIAL_CONFIG_KEY = "shop_chest_material"
@@ -102,12 +103,16 @@ class ChestShop(JavaPlugin, Listener):
         self.logger = self.getLogger()
 
     def onEnable(self):
+        super(ChestShop, self).onEnable()
         self.load_plugin_config()
         self.setup_database()
         self.load_shop_locations()
         self.setup_economy()
         self.setup_permissions()
-        self.register_events()
+
+        pm = self.getServer().getPluginManager()
+        pm.registerEvents(self, self)  # Register the plugin instance as the event handler
+
         self.setup_placeholder_api()
         self.vault_unlocked_api = VaultUnlockedAPI()
         self.logger.info("ChestShop plugin enabled.")
@@ -216,10 +221,6 @@ class ChestShop(JavaPlugin, Listener):
             self.permission = None
             self.logger.warning("No Vault permission provider found!")
 
-    def register_events(self):
-        pm = self.getServer().getPluginManager()
-        pm.registerEvents(self, self)
-
     def setup_placeholder_api(self):
         PlaceholderAPI.registerPlaceholder("shop_balance", self.get_shop_balance)
 
@@ -244,7 +245,6 @@ class ChestShop(JavaPlugin, Listener):
         else:
             return player.hasPermission(permission_node)  # Fallback to Bukkit Permissions
 
-    @EventHandler
     def onPlayerInteract(self, event):
         action = event.getAction()
         block = event.getClickedBlock()
@@ -306,7 +306,6 @@ class ChestShop(JavaPlugin, Listener):
         player.sendMessage(self.colorize("&c&lYou cannot break shop chests directly!"))
         player.sendMessage(self.colorize("&7Interact (right-click) to use the shop."))
 
-    @EventHandler
     def onSignChange(self, event):
         sign = event.getSign()
         sign_text = sign.getLine(0)
@@ -320,7 +319,6 @@ class ChestShop(JavaPlugin, Listener):
                 else:
                     player.sendMessage(self.colorize(self.message_no_permission)) #Customizable Vault error message
 
-    @EventHandler
     def onBlockBreak(self, event):
         block = event.getBlock()
         player = event.getPlayer()
@@ -599,8 +597,7 @@ class ChestShop(JavaPlugin, Listener):
 
         player.openInventory(inventory)
 
-    @EventHandler
-    def on_inventory_click(self, event):
+    def onInventoryClick(self, event):
         if event.getInventory().getName() == ChatColor.translateAlternateColorCodes('&', self.gui_title):
             event.setCancelled(True)
             player = event.getWhoClicked()
@@ -608,8 +605,7 @@ class ChestShop(JavaPlugin, Listener):
             if clicked_item is not None and clicked_item.getType() == Material.DIAMOND:
                 player.sendMessage(self.colorize("&aYou clicked on a diamond!")) #Customizable Vault error message
 
-    @EventHandler
-    def on_inventory_close(self, event):
+    def onInventoryClose(self, event):
         if event.getInventory().getName() == ChatColor.translateAlternateColorCodes('&', self.gui_title):
             player = event.getPlayer()
             inventory = event.getInventory()
@@ -618,4 +614,22 @@ class ChestShop(JavaPlugin, Listener):
                 item_stack = inventory.getItem(slot)
                 if item_stack is not None:
                     material_name = item_stack.getType().name()
-                    self.save_item_
+                    self.save_item_to_database(slot, material_name)
+
+    def save_item_to_database(self, slot, material_name):
+        cursor = self.db_connection.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO gui_items (slot, material_name)
+            VALUES (?, ?)
+        ''', (slot, material_name))
+        self.db_connection.commit()
+        cursor.close()
+
+    def handle_shopgui_command(self, sender, args):
+        if not isinstance(sender, Player):
+            sender.sendMessage(self.colorize("&cThis command can only be used by players in-game.")) #Customizable Vault error message
+            return True
+
+        player = sender
+        self.open_shop_gui(player)
+        return True
