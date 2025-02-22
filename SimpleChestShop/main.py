@@ -1,20 +1,22 @@
 import os
-import sqlite3
+# import sqlite3
 from java.sql import Connection, DriverManager, SQLException
+from java.util.logging import Logger
 
 # LuckPerms
 from net.luckperms.api import LuckPerms
 
 # Placeholder API
-from me.clip.placeholderapi import PlaceholderAPI
+# from me.clip.placeholderapi import PlaceholderAPI
 
 # Third-party imports
 import pyspigot as ps
 from net.milkbowl.vault2.economy import Economy
 from net.milkbowl.vault2.permission import Permission
+from net.milkbowl.vault2.economy import EconomyResponse
 from net.milkbowl.vault2.chat import Chat
 from com.palmergames.bukkit.towny import TownyUniverse
-from net.milkbowl.vaultunlocked.api import VaultUnlockedAPI
+# from net.milkbowl.vaultunlocked.api import VaultUnlockedAPI
 
 # Bukkit API imports
 from org.bukkit.plugin.java import JavaPlugin
@@ -30,13 +32,13 @@ from org.bukkit.event.block import SignChangeEvent
 from org.bukkit.command import CommandSender
 from org.bukkit import ChatColor
 from org.bukkit.permissions import Permission
+from org.bukkit.plugin import RegisteredServiceProvider
 
 # GUI imports
 from org.bukkit.inventory import Inventory
 from org.bukkit.event.inventory import InventoryType
 from org.bukkit.event.inventory import InventoryClickEvent
 from org.bukkit.event.inventory import InventoryCloseEvent
-from org.bukkit import ChatColor
 
 # Geyser API imports
 from org.geysermc.api.GeyserApi import GeyserApi
@@ -46,7 +48,7 @@ from org.geysermc.floodgate.api.FloodgateApi import FloodgateApi
 from pyspigot import ConfigurationManager
 
 # YAML Config
-import ruamel.yaml as yaml
+#import ruamel.yaml as yaml
 
 CONFIG_FILE = "config.yml"
 SHOP_CHEST_MATERIAL_CONFIG_KEY = "shop_chest_material"
