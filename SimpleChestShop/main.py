@@ -1,12 +1,12 @@
 import os
-import sqlite3
+# import sqlite3
 from java.sql import Connection, DriverManager, SQLException
 
 # LuckPerms
 from net.luckperms.api import LuckPerms
 
 # Placeholder API
-from me.clip.placeholderapi import PlaceholderAPI
+# from me.clip.placeholderapi import PlaceholderAPI
 
 # Third-party imports
 import pyspigot as ps
