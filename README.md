@@ -8,32 +8,34 @@
 
 # Simple Chest Shop - Py-Spigot Edition
 
+**Effortless Chest Shops for Your Minecraft Server**
+
 ## Overview
 
-Simple Chest Shop is a user-friendly and efficient chest shop plugin for Py-Spigot servers.  Designed to be straightforward and easy to use, it fills the need for a simple yet functional shop system without the complexities often found in other plugins.  It seamlessly integrates with TownyAdvanced, allowing players to create and manage shops within their towns and plots.  With Geyser support, Bedrock Edition players can also fully participate in the chest shop economy alongside Java Edition players.
+Simple Chest Shop is a plugin designed to bring intuitive and efficient chest shop functionality to your PySpigot server. If you've been seeking a straightforward, user-friendly shop system without the overwhelming complexity of many alternatives, look no further!
 
-Inspired by the core functionality of classic chest shop plugins, Simple Chest Shop provides a clean and intuitive experience, prioritizing ease of use and essential features for both players and server administrators.
+This plugin streamlines the shop creation and management experience for both players and administrators, focusing on core functionality and ease of use. With seamless integrations with TownyAdvanced and Geyser, you can empower your community with a robust and accessible trading system.
 
-This plugin was developed for 0FTH3N1GHT's development server, and current development is based on the specs of that server. If you're looking for platform agnostic code, either use the issues tab above, or fork and contribute. 
+Built to fill the needs of the 0FTH3N1GHT's development server, Simple Chest Shop prioritizes clean design and a smooth, enjoyable user experience. Development is ongoing.
 
 ## Languages 
 
-English only for now, I don't trust my own natural language so unless "TYPO-ESE" is a language, English is it for now.  In future i'll try and see how that works otherwise.
+English, but future development pending- we'll work in more languages. 
 
-## Why PySpigot? 
+## Developed with PySpigot
 
-Current I do not know how to code much outside of HTML, Python, and CSS.  I know how to poke around a few other formats of web development, but nothing solid. Due to my freelancing in and out of AI/ML i learned a little bit about python, and the natural language feature of it makes it easier for me to understand.  I've been using the combination of lack of smarts, and studying at what feels like 3am all the API's I need to include.  While the use of LLM's has been employed, trust me, this isn't just "telling GPT to make it" - i'm checking all the code, i'm linting where i'm able. I'm learning a long the way. 
+This plugin is written in Python using PySpigot. Python's natural language-like syntax and the vast ecosystem of available libraries have made it easier to develop. I used the combination of lack of smarts, and studying at what feels like 3am all the API's I need to include. While the use of LLM's has been employed, trust me, this isn't just "telling GPT to make it" - i'm checking all the code, i'm linting where i'm able. I'm learning a long the way. I'm excited to continue expanding my skills and making this plugin the best it can be!
 
-## Why Choose Simple Chest Shop?
+## Why Simple Chest Shop?
 
-Many existing chest shop plugins, while powerful, can be overwhelming with their extensive command sets, intricate configurations, and steep learning curves.  Simple Chest Shop takes a different approach, focusing on providing the *essential* chest shop experience in a way that is:
+Many chest shop plugins are bloated with overwhelming command sets, intricate configurations, and steep learning curves. Simple Chest Shop offers a refreshing alternative:
 
-*   **Easy to Understand:**  Intuitive sign-based setup and clear player interactions.
-*   **Simple to Configure:**  Straightforward configuration options for server administrators.
-*   **Efficient and Lightweight:**  Focuses on core chest shop functionality without unnecessary bloat.
-*   **Accessible to All Players:**  Supports both Java and Bedrock Edition clients through Geyser integration.
+*   **Simplicity:** Easy to understand and use for both players and administrators.
+*   **Accessibility:** Supports both Java and Bedrock Edition clients.
+*   **Focus:** Provides the *essential* chest shop experience without unnecessary features.
+*   **Performance:** Lightweight design ensures minimal impact on server performance.
 
-Simple Chest Shop is ideal for servers that value simplicity, ease of use, and a focus on core gameplay without sacrificing essential features. It provides a robust and user-friendly chest shop system that anyone can quickly learn and enjoy.
+Simple Chest Shop is perfect for servers that value ease of use, a clean gameplay experience, and a focus on core functionality without sacrificing essential features.
 
 
 ## Requirements
@@ -41,16 +43,19 @@ Simple Chest Shop is ideal for servers that value simplicity, ease of use, and a
 - [Pyspigot](https://github.com/magicmq/pyspigot)
 - [Spigot](https://www.spigotmc.org/)
 - [Geyser](https://geysermc.org/)
-- TownyAdvanced
-- VaultUnlocked
-- Placeholder API
-- LuckPerms
-- Minecraft 1.21.3 (tested)
+- [TownyAdvanced](https://github.com/TownyAdvanced/Towny)
+- [VaultUnlocked](https://github.com/TheNewEconomy/VaultUnlocked)
+- [Placeholder API](https://github.com/PlaceholderAPI/PlaceholderAPI)
+- [LuckPerms](https://luckperms.net/)
+- [Minecraft](https://www.minecraft.net/en-us)
+- [Spigot](https://www.spigotmc.org/)
 
 
 ## Installation 
 
-Please place into the SCRIPTS folder of your Pyspigot plugin.
+To install Simple Chest Shop, follow these steps:
+
+1.  Place the `SimpleChestShop` folder into the `plugins/PySpigot/scripts/` directory. Ensure that `main.py` and `config.yml` are located directly within the `SimpleChestShop` folder.
 
 ```bash
 plugins/
@@ -60,7 +65,7 @@ plugins/
             ├── main.py
             └── config.yml
 ```
-
+2.  Start or restart your Minecraft server. Simple Chest Shop will automatically load if PySpigot is also installed.
 
 
 ## License
