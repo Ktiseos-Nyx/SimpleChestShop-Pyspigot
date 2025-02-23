@@ -12,7 +12,7 @@ from org.bukkit.plugin.java import JavaPlugin
 from org.bukkit import Material
 from org.bukkit.block import Sign
 from org.bukkit.entity import Player
-from org.bukkit.event import EventHandler, Listener  # Listener is needed
+from org.bukkit.event import Listener  # Listener is needed
 from org.bukkit.inventory import ItemStack
 from org.bukkit import Bukkit
 from org.bukkit.event.player import PlayerInteractEvent
@@ -25,17 +25,8 @@ from org.bukkit.block import Chest, BlockFace  # Import BlockFace
 from org.bukkit import GameMode
 from org.bukkit.event.player import AsyncPlayerChatEvent  # For chat listener
 
-# GUI imports (Keep if you plan to use them later)
-from org.bukkit.inventory import Inventory
-from org.bukkit.event.inventory import InventoryType
-from org.bukkit.event.inventory import InventoryClickEvent
-from org.bukkit.event.inventory import InventoryCloseEvent
-
 # Pyspigot Configuration Manager
 # from pyspigot import ConfigurationManager # Already imported as ps
-
-# YAML Config (If you plan to use it)
-#import ruamel.yaml as yaml
 
 # LuckPerms
 try:
@@ -66,12 +57,6 @@ except ImportError:
 from com.palmergames.bukkit.towny import TownyUniverse
 # from net.milkbowl.vaultunlocked.api import VaultUnlockedAPI # If you use it
 
-from org.bukkit.persistence import PersistentDataType #For the GUI
-from org.bukkit.NamespacedKey import NamespacedKey #For the GUI
-from java.util import ArrayList #For the GUI
-
-ACTION_KEY = NamespacedKey.fromString("action", ps)
-
 CONFIG_FILE = "config.yml"
 SHOP_CHEST_MATERIAL_CONFIG_KEY = "shop_chest_material"
 SHOP_IDENTIFIER_SIGN_TEXT_CONFIG_KEY = "shop_identifier_sign_text"
@@ -93,10 +78,6 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         self.chat = None
         self.luckperms = None
         self.allow_admin_shops = False
-        self.gui_title = "&aChest Shop"  # Default GUI title
-        self.gui_size = 27  # Default GUI size
-        self.default_items = {}  # Dictionary to store default items in GUI
-        self.vault_unlocked_api = None
         self.message_shop_created = "&aShop created for {item}"
         self.message_admin_shop_created = "&aAdmin shop created for {item}"
         self.message_no_permission = "&cYou do not have permission to perform this action."
@@ -139,9 +120,6 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         self.shop_chest_material = self.config_manager.get("shop_chest_material", "CHEST")
         self.shop_identifier_sign_text = self.config_manager.get("shop_identifier_sign_text", "[Shop]")
         self.allow_admin_shops = self.config_manager.get("allow_admin_shops", False)
-        self.gui_title = self.config_manager.get("gui_title", "&aChest Shop")
-        self.gui_size = self.config_manager.get("gui_size", 27)
-        self.default_items = self.config_manager.get("default_items", {})
         self.message_shop_created = self.config_manager.get("message_shop_created", "&aShop created for {item}")
         self.message_admin_shop_created = self.config_manager.get("message_admin_shop_created", "&aAdmin shop created for {item}")
         self.message_no_permission = self.config_manager.get("message_no_permission", "&cYou do not have permission to perform this action.")
@@ -159,9 +137,6 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         self.config_manager.set("shop_chest_material", self.shop_chest_material)
         self.config_manager.set("shop_identifier_sign_text", self.shop_identifier_sign_text)
         self.config_manager.set("allow_admin_shops", self.allow_admin_shops)
-        self.config_manager.set("gui_title", self.gui_title)
-        self.config_manager.set("gui_size", self.gui_size)
-        self.config_manager.set("default_items", self.default_items)
         self.config_manager.save_config("config.yml")
         self.logger.info("Configuration saved to '{}'".format(CONFIG_FILE))
 
@@ -391,183 +366,4 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         item_stack = inventory.getItem(0)  # Get the first item (slot 0)
 
         if item_stack is None:
-            player.sendMessage(self.colorize("&cChest is empty! Please add an item to the chest."))
-            event.setCancelled(True)
-            return
-
-        # Set preliminary sign text
-        event.setLine(0, self.shop_identifier_sign_text)  # Use the configured identifier
-        event.setLine(1, item_stack.getType().name()) # Use .name()
-        event.setLine(2, str(item_stack.getAmount())) # Convert to string
-        event.setLine(3, "Set Price")  # Placeholder for price
-
-        # Store information for later price setting
-        self.pending_price_settings[player.getName()] = {
-            "location": str(block_below.getLocation()),
-            "item": item_stack.getType().name(),
-            "amount": item_stack.getAmount(),  # Store the amount
-            "sign": sign,  # Store the sign object
-        }
-
-        player.sendMessage(self.colorize("&aShop sign created! Please enter the price in chat."))
-
-    # No @EventHandler decorator!
-    def onPlayerChat(self, event):
-        player = event.getPlayer()
-        player_name = player.getName()
-
-        if player_name in self.pending_price_settings:
-            try:
-                price = float(event.getMessage())
-                shop_data = self.pending_price_settings.pop(player_name)  # Get and remove
-                location_string = shop_data["location"]
-                item_name = shop_data["item"]
-                amount = shop_data["amount"]  # Get the amount
-                sign = shop_data["sign"]
-
-                # NOW you can create the shop:
-                self.create_shop(player_name, location_string, item_name, price, is_admin_shop=False)
-                sign.setLine(3, str(price))  # Update price on the sign
-                sign.update()  # Update the sign in the world
-                player.sendMessage(self.colorize("&aShop created successfully!"))
-
-            except ValueError:
-                player.sendMessage(self.colorize("&cInvalid price. Please enter a number."))
-            event.setCancelled(True)  # Cancel the chat message
-
-    def onBlockBreak(self, event):
-        block = event.getBlock()
-        player = event.getPlayer()
-        if block.getType() == self.shop_chest_material:
-            if self.is_shop_chest(block):  # Use the is_shop_chest method
-                event.setCancelled(True)
-                player.sendMessage(self.colorize("&c&lYou cannot break shop chests!"))
-                player.sendMessage(self.colorize("&7Use /removeshop to remove a shop."))
-
-    def onCommand(self, sender, command, label, args):
-        # No command logic in the main class!  This is handled by CreateShopCommand
-        return False
-
-    def handle_shopinfo_command(self, sender, args):
-        if not isinstance(sender, Player):
-            sender.sendMessage(self.colorize("&cThis command can only be used by players in-game."))
-            return True
-
-        player = sender
-        block = player.getTargetBlock(None, 5)
-
-        if block.getType() != self.shop_chest_material:
-            player.sendMessage(self.colorize("&cYou must be looking at a chest to get shop info."))
-            return True
-
-        location = block.getLocation()
-        shops = self.get_shops()
-        for shop in shops:
-            if shop[2] == str(location):
-                player.sendMessage(self.colorize("&aShop found: Owner: {}, Item: {}, Price: {}".format(shop[1], shop[3], shop[4])))
-                return True
-
-        player.sendMessage(self.colorize("&cNo shop found at this location."))
-        return True
-
-    def handle_removeshop_command(self, sender, args):
-        if not isinstance(sender, Player):
-            sender.sendMessage(self.colorize("&cThis command can only be used by players in-game."))
-            return True
-
-        player = sender
-        if not self.has_permission(player, "chestshop.removeshop"):
-             sender.sendMessage(self.colorize(self.message_no_permission))
-             return True
-
-        target_block = player.getTargetBlock(None, 5)
-        if not target_block or target_block.getType() != self.shop_chest_material:
-            player.sendMessage(self.colorize("&cYou must be looking at a shop chest to use /removeshop."))
-            return True
-
-        location = target_block.getLocation()
-        shops = self.get_shops()
-        for shop in shops:
-            if shop[2] == str(location):
-                if shop[1] == player.getName() or self.allow_admin_shops:
-                    self.remove_shop(shop[0])
-                    player.sendMessage(self.colorize("&aShop removed at this location."))
-                    return True
-                else:
-                    player.sendMessage(self.colorize("&cYou do not own this shop."))
-                    return True
-
-        player.sendMessage(self.colorize("&cNo shop found at this location."))
-        return True
-    def handle_buy_command(self, sender, args):
-      #Buy command will be added in future updates.
-      return False
-
-    def handle_createadminshop_command(self, sender, args):
-       #Admin shops will be added in future updates.
-       return False
-
-    def is_in_valid_town(self, player):
-        if not self.enable_towny_integration:
-            return True
-
-        towny_player = TownyUniverse.getPlayer(player.getName())
-        if towny_player.hasTown():
-            return True
-        return False
-
-    def getSignBlock(self, sender):
-        target_block = sender.getTargetBlock(None, 5)
-        if target_block.getType() == Material.SIGN or target_block.getType() == Material.WALL_SIGN:
-            return target_block.getState()
-        return None
-
-    def isThereAShopAtThisLocation(self, player):
-        target_block = player.getTargetBlock(None, 5)
-        #Check to see what is in the area
-        if target_block is None or target_block.getType() != Material.SIGN:
-            player.sendMessage(ChatColor.translateAlternateColorCodes('&', self.message_no_permission))
-            return None
-        self.getServer().broadcastMessage(ChatColor.BLUE + "Setting " + "Found Sign in Location");
-
-        return target_block.getState()
-
-    def create_shop(self, owner, location, item, price, is_admin_shop):
-        try:
-            self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
-            cursor = self.db_connection.cursor()
-            cursor.execute("INSERT INTO shops (owner, location, item, price, is_admin_shop) VALUES (?, ?, ?, ?, ?)",
-                           (owner, str(location), item, price, is_admin_shop))
-            self.db_connection.commit()
-            self.shop_locations.add(location)
-            self.logger.info("Shop created at {}".format(location))
-        except SQLException, e:
-            self.logger.severe("SQL error creating shop: {}".format(e.getMessage()))
-        finally:
-            if self.db_connection:
-                try:
-                    self.db_connection.close()
-                except SQLException, e:
-                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
-
-class CreateShopCommand(CommandExecutor):
-    def __init__(self, plugin):
-        self.plugin = plugin  # Store the main plugin instance
-
-    def onCommand(self, sender, command, label, args):
-        #This command is now redundant and handled inside of on sign change
-        return False
-
-class ShopInfoCommand(CommandExecutor):
-    def __init__(self, plugin):
-        self.plugin = plugin
-
-    def onCommand(self, sender, command, label, args):
-        return self.plugin.handle_shopinfo_command(sender, args)
-
-class RemoveShopCommand(CommandExecutor):
-    def __init__(self, plugin):
-        self.plugin = plugin
-
-    def onCommand(self, sender, command, label, args):
-        return self.plugin.handle_removeshop_command(sender, args)
+            player.sendMessage
