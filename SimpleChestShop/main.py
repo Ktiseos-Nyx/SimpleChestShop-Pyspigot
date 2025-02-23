@@ -310,17 +310,15 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         pm.registerEvents(self, self)  # Register THIS class as the listener
 
         # New command registrations
-    self.getCommand("shopadd").setExecutor(AddShopItemCommand(self))
-    self.getCommand("shopremove").setExecutor(RemoveShopItemCommand(self))
-    self.getCommand("shopupdate").setExecutor(UpdateShopItemCommand(self))
+        self.getCommand("shopadd").setExecutor(AddShopItemCommand(self))
+        self.getCommand("shopremove").setExecutor(RemoveShopItemCommand(self))
+        self.getCommand("shopupdate").setExecutor(UpdateShopItemCommand(self))
+        self.getCommand("createshop").setExecutor(CreateShopCommand(self))
+        self.getCommand("shopinfo").setExecutor(ShopInfoCommand(self))
+        self.getCommand("removeshop").setExecutor(RemoveShopCommand(self))
 
-        # Register commands
-    self.getCommand("createshop").setExecutor(CreateShopCommand(self))  # Pass the plugin instance
-    self.getCommand("shopinfo").setExecutor(ShopInfoCommand(self)) #Pass plugin instance
-    self.getCommand("removeshop").setExecutor(RemoveShopCommand(self)) #Pass plugin instance
-
-    self.vault_unlocked_api = VaultUnlockedAPI()
-    self.logger.info("ChestShop plugin enabled.")
+        self.vault_unlocked_api = VaultUnlockedAPI()
+        self.logger.info("ChestShop plugin enabled.")
 
     def onDisable(self):
         if self.db_connection:
