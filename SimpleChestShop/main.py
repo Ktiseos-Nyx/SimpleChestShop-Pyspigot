@@ -671,15 +671,15 @@ def add_items_to_shop(self, shop_id, items):
         
         self.db_connection.commit()
         cursor.close()
-        self.logger.info(f"Added items to shop {shop_id}")
+        self.logger.info("Added items to shop {}".format(shop_id))
     except SQLException, e:
-        self.logger.severe(f"SQL error adding items to shop: {e.getMessage()}")
+        self.logger.severe("SQL error adding items to shop: {}".format(e.getMessage()))
     finally:
         if self.db_connection:
             try:
                 self.db_connection.close()
             except SQLException, e:
-                self.logger.severe(f"Failed to close database connection: {e.getMessage()}")
+                self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
 
 def remove_items_from_shop(self, shop_id, items):
     try:
@@ -696,15 +696,15 @@ def remove_items_from_shop(self, shop_id, items):
         
         self.db_connection.commit()
         cursor.close()
-        self.logger.info(f"Removed items from shop {shop_id}")
+        self.logger.info("Removed items from shop {}".format(shop_id))
     except SQLException, e:
-        self.logger.severe(f"SQL error removing items from shop: {e.getMessage()}")
+        self.logger.severe("SQL error removing items from shop: {}".format(e.getMessage()))
     finally:
         if self.db_connection:
             try:
                 self.db_connection.close()
             except SQLException, e:
-                self.logger.severe(f"Failed to close database connection: {e.getMessage()}")
+                self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
 
 def update_shop_items(self, shop_id, items):
     try:
@@ -717,15 +717,15 @@ def update_shop_items(self, shop_id, items):
         
         self.db_connection.commit()
         cursor.close()
-        self.logger.info(f"Updated items in shop {shop_id}")
+        self.logger.info("Updated items in shop {}".format(shop_id))
     except SQLException, e:
-        self.logger.severe(f"SQL error updating shop items: {e.getMessage()}")
+        self.logger.severe("SQL error updating shop items: {}".format(e.getMessage()))
     finally:
         if self.db_connection:
             try:
                 self.db_connection.close()
             except SQLException, e:
-                self.logger.severe(f"Failed to close database connection: {e.getMessage()}")
+                self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
 
     def get_shop_by_location(self, location):
         try:
