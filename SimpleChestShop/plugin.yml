@@ -43,6 +43,24 @@ commands:
     permission: chestshop.admin
     permission-message: You do not have permission to create admin shops.
 
+  shopadd:
+    description: Add items to an existing shop
+    usage: /shopadd <item> <quantity>
+    permission: chestshop.modify
+    permission-message: You do not have permission to modify shops.
+
+  shopremove:
+    description: Remove items from an existing shop
+    usage: /shopremove <item>
+    permission: chestshop.modify
+    permission-message: You do not have permission to modify shops.
+
+  shopupdate:
+    description: Update item quantities and prices in a shop
+    usage: /shopupdate <item> <quantity> <price>
+    permission: chestshop.modify
+    permission-message: You do not have permission to modify shops.
+
 permissions: # ADDED - Define permissions
   chestshop.create:
     description: Allows players to create shops.
@@ -56,5 +74,8 @@ permissions: # ADDED - Define permissions
   chestshop.admin:
     description: Allows players to create admin shops.
     default: op
+  chestshop.modify:
+    description: Allows players to modify their own shops
+    default: true
   #chestshop.info: # Removed.  No permission needed.
   #chestshop.gui:  # Removed.  No permission needed.
