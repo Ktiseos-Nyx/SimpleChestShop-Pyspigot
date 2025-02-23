@@ -208,7 +208,7 @@ class CreateShopCommand(CommandExecutor):
 
         location = target_block.getLocation()
         self.plugin.create_shop(sender.getName(), str(location), {item: 1}, price, False)
-        sender.sendMessage(self.plugin.colorize("&aShop created successfully!"))
+        sender.sendMessage(self.plugin.colorize("&aShop created for {}".format(item)))
         return True
 
 class ShopInfoCommand(CommandExecutor):
@@ -230,6 +230,8 @@ class ShopInfoCommand(CommandExecutor):
         for shop in shops:
             if shop[2] == str(location):
                 sender.sendMessage(self.plugin.colorize("&aShop found: Owner: {}, Item: {}, Price: {}".format(shop[1], shop[3], shop[4])))
+                sender.sendMessage(self.plugin.colorize("&aThis shop is owned by {} and is located at {}".format(shop[1], shop[2])))
+                sender.sendMessage(self.plugin.colorize("&aShop ownership and location: {} - {}".format(shop[1], shop[2])))
                 return True
 
         sender.sendMessage(self.plugin.colorize("&cNo shop found at this location."))
@@ -259,7 +261,7 @@ class RemoveShopCommand(CommandExecutor):
             if shop[2] == str(location):
                 if shop[1] == sender.getName() or self.plugin.allow_admin_shops:
                     self.plugin.remove_shop(shop[0])
-                    sender.sendMessage(self.plugin.colorize("&aShop removed at this location."))
+                    sender.sendMessage(self.plugin.colorize("&aShop removed successfully."))
                     return True
                 else:
                     sender.sendMessage(self.plugin.colorize("&cYou do not own this shop."))
