@@ -34,6 +34,11 @@ message_shop_created: "&aShop created for {item}"  # Message when a shop is succ
 message_admin_shop_created: "&aAdmin shop created for {item}"  # Message for admin-created shops.
 message_no_permission: "&cYou do not have permission to perform this action."  # Message for permission denial.
 message_invalid_arguments: "&cInvalid arguments. Usage: {usage}"  # Message for invalid command usage.
+message_items_added: "&aAdded {quantity} {item} to your shop."
+message_items_removed: "&aRemoved {items} from your shop."
+message_items_updated: "&aUpdated {item} in your shop to quantity {quantity} and price ${price}."
+message_invalid_quantity: "&cQuantity must be a positive integer."
+message_invalid_price: "&cPrice must be a non-negative number."
 
 # Currency settings
 currency_symbol: "$"  # Symbol used to represent currency in the shop.
