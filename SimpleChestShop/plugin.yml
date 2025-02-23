@@ -1,0 +1,60 @@
+name: SimpleChestShop
+version: 0.01-Alpha
+main: main.ChestShop  # Corrected: Use module.ClassName
+api-version: "1.20"
+description: A plugin for creating simple chest shops in Minecraft.
+author: Ktiseos-Nyx
+
+depend: [Vault] # Corrected: LuckPerms is optional, Towny is optional
+softdepend: [PlaceholderAPI, LuckPerms, Towny]  # Corrected: Use softdepend for optional
+
+commands:
+  createshop:
+    description: Create a shop at the specified chest.
+    usage: /createshop <item> <price>
+    permission: chestshop.create
+    permission-message: You do not have permission to create shops.
+
+  removeshop:
+    description: Remove a shop at the targeted chest.
+    usage: /removeshop
+    permission: chestshop.removeshop  # Corrected: Use consistent permission names
+    permission-message: You do not have permission to remove shops.
+
+  shopinfo:
+    description: Get information about the shop at the targeted chest.
+    usage: /shopinfo
+    # No permission needed - anyone can use this (remove permission lines)
+
+  setprice:
+    description: Set the price for the item in the shop.
+    usage: /setprice <location> <price>  # Corrected: Include location
+    permission: chestshop.setprice
+    permission-message: You do not have permission to set prices.
+
+  shopgui:
+    description: Open the shop configuration GUI.
+    usage: /shopgui
+    # No permission needed - anyone can use this (remove permission lines)
+
+  createadminshop: # ADDED
+    description: Create an admin shop.
+    usage: /createadminshop <item> <price>
+    permission: chestshop.admin
+    permission-message: You do not have permission to create admin shops.
+
+permissions: # ADDED - Define permissions
+  chestshop.create:
+    description: Allows players to create shops.
+    default: op  # Change this to true or false as needed
+  chestshop.removeshop:
+    description: Allows players to remove shops.
+    default: op
+  chestshop.setprice:
+    description: Allows players to set shop prices.
+    default: op
+  chestshop.admin:
+    description: Allows players to create admin shops.
+    default: op
+  #chestshop.info: # Removed.  No permission needed.
+  #chestshop.gui:  # Removed.  No permission needed.
