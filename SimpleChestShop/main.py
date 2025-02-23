@@ -101,7 +101,7 @@ class AddShopItemCommand(CommandExecutor):
             return True
 
         self.plugin.add_items_to_shop(shop['id'], {args[0]: quantity})
-        sender.sendMessage(self.plugin.colorize(f"&aAdded {quantity} {args[0]} to your shop."))
+        sender.sendMessage(self.plugin.colorize("&aAdded {} {} to your shop.".format(quantity, args[0])))
         return True
 
 class RemoveShopItemCommand(CommandExecutor):
