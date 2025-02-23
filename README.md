@@ -43,14 +43,18 @@ Simple Chest Shop is perfect for servers that value ease of use, a clean gamepla
 - [Pyspigot](https://github.com/magicmq/pyspigot)
 - [Spigot](https://www.spigotmc.org/)
 - [Geyser](https://geysermc.org/)
+- [Minecraft](https://www.minecraft.net/en-us)
+
+
+## "SOFT" Dependencies
+
+Plugins that we think ARE required but in coding realized not everyone uses:
+
 - [TownyAdvanced](https://github.com/TownyAdvanced/Towny)
 - [VaultUnlocked](https://github.com/TheNewEconomy/VaultUnlocked)
 - [Placeholder API](https://github.com/PlaceholderAPI/PlaceholderAPI)
 - [LuckPerms](https://luckperms.net/)
-- [Minecraft](https://www.minecraft.net/en-us)
-- [Spigot](https://www.spigotmc.org/)
-
-
+  
 ## Installation 
 
 To install Simple Chest Shop, follow these steps:
