@@ -388,13 +388,13 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
         return func(self.db_connection, *args, **kwargs)
     except SQLException as e:
-        self.logger.severe("SQL error: {}".format(e.getMessage()))
+        self.log_sql_error(e, "SQL error")
     finally:
         if self.db_connection:
             try:
                 self.db_connection.close()
             except SQLException as e:
-                self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+                self.log_sql_error(e, "Failed to close database connection")
 
     def load_shop_locations(self):
         self.shop_locations.clear()
@@ -402,21 +402,15 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         for shop in shops:
             self.shop_locations.add(shop[2])
 
-    def with_database_connection(self, func, *args, **kwargs):
-        try:
-            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
-            return func(self.db_connection, *args, **kwargs)
-        except SQLException as e:
-            self.logger.severe("SQL error: {}".format(e.getMessage()))
-        finally:
-            if self.db_connection:
-                try:
-                    self.db_connection.close()
-                except SQLException as e:
-                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+    def log_sql_error(self, e, custom_message):
+        self.logger.severe("{}: {}".format(custom_message, e.getMessage()))
 
     def get_shops(self):
-        return self.with_database_connection(self._get_shops)
+        try:
+            return self.with_database_connection(self._get_shops)
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error while getting shops")
+            return []
 
     def _get_shops(self, db_connection):
         try:
@@ -426,11 +420,14 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             cursor.close()
             return shops
         except SQLException as e:
-            self.logger.severe("SQL error: {}".format(e.getMessage()))
+            self.log_sql_error(e, "SQL error while fetching shops")
             return []
 
     def add_shop(self, owner, location, is_admin_shop):
-        return self.with_database_connection(self._add_shop, owner, location, is_admin_shop)
+        try:
+            return self.with_database_connection(self._add_shop, owner, location, is_admin_shop)
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error while adding shop")
 
     def _add_shop(self, db_connection, owner, location, is_admin_shop):
         try:
@@ -441,10 +438,13 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             self.load_shop_locations()
             self.logger.info("Shop created at {}".format(location))
         except SQLException as e:
-            self.logger.severe("SQL error creating shop: {}".format(e.getMessage()))
+            self.log_sql_error(e, "SQL error while creating shop")
 
     def remove_shop(self, shop_id):
-        return self.with_database_connection(self._remove_shop, shop_id)
+        try:
+            return self.with_database_connection(self._remove_shop, shop_id)
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error while removing shop")
 
     def _remove_shop(self, db_connection, shop_id):
         try:
@@ -453,7 +453,7 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             cursor.close()
             self.logger.info("Shop removed with ID {}".format(shop_id))
         except SQLException as e:
-            self.logger.severe("SQL error removing shop: {}".format(e.getMessage()))
+            self.log_sql_error(e, "SQL error while removing shop")
 
     def create_shop(self, owner, location, items, price, is_admin_shop):
         try:
@@ -474,14 +474,14 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             cursor.close()
             self.load_shop_locations()
             self.logger.info("Shop created at {}".format(location))
-        except SQLException as e:
-            self.logger.severe("SQL error creating shop: {}".format(e.getMessage()))
+        except SQLException, e:
+            self.log_sql_error(e, "SQL error creating shop")
         finally:
             if self.db_connection:
                 try:
                     self.db_connection.close()
-                except SQLException as e:
-                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+                except SQLException, e:
+                    self.log_sql_error(e, "Failed to close database connection")
 
     def setup_economy(self):
         if not has_vault:
@@ -729,13 +729,13 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             cursor.close()
             self.logger.info("Added items to shop {}".format(shop_id))
         except SQLException, e:
-            self.logger.severe("SQL error adding items to shop: {}".format(e.getMessage()))
+            self.log_sql_error(e, "SQL error adding items to shop")
         finally:
             if self.db_connection:
                 try:
                     self.db_connection.close()
                 except SQLException, e:
-                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+                    self.log_sql_error(e, "Failed to close database connection")
 
     def remove_items_from_shop(self, shop_id, items):
         try:
@@ -754,13 +754,13 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             cursor.close()
             self.logger.info("Removed items from shop {}".format(shop_id))
         except SQLException, e:
-            self.logger.severe("SQL error removing items from shop: {}".format(e.getMessage()))
+            self.log_sql_error(e, "SQL error removing items from shop")
         finally:
             if self.db_connection:
                 try:
                     self.db_connection.close()
                 except SQLException, e:
-                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+                    self.log_sql_error(e, "Failed to close database connection")
 
     def update_shop_items(self, shop_id, items):
         try:
@@ -775,13 +775,13 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             cursor.close()
             self.logger.info("Updated items in shop {}".format(shop_id))
         except SQLException, e:
-            self.logger.severe("SQL error updating shop items: {}".format(e.getMessage()))
+            self.log_sql_error(e, "SQL error updating shop items")
         finally:
             if self.db_connection:
                 try:
                     self.db_connection.close()
                 except SQLException, e:
-                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+                    self.log_sql_error(e, "Failed to close database connection")
 
     def get_shop_by_location(self, location):
         try:
@@ -815,11 +815,11 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             else:
                 return None
         except SQLException, e:
-            self.logger.severe("SQL error: {}".format(e.getMessage()))
+            self.log_sql_error(e, "SQL error")
             return None # Return None on error
         finally:
             if self.db_connection:
                 try:
                     self.db_connection.close()
                 except SQLException, e:
-                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+                    self.log_sql_error(e, "Failed to close database connection")
