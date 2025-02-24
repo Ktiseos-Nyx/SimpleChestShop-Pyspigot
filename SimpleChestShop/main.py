@@ -705,83 +705,68 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         player.sendMessage(self.colorize("&aShop sign created! Please enter the total price for all items in chat."))
         event.setCancelled(True)
 
-    def add_items_to_shop(self, shop_id, items):
+    def add_item_to_shop(self, shop_id, item, quantity):
         try:
             self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
             cursor = self.db_connection.cursor()
-            
-            for item, quantity in items.items():
-                # Check if item already exists
-                cursor.execute("SELECT quantity FROM shop_items WHERE shop_id = ? AND item = ?", (shop_id, item))
-                existing = cursor.fetchone()
-                
-                if existing:
-                    # Update quantity
-                    new_quantity = existing[0] + quantity
-                    cursor.execute("UPDATE shop_items SET quantity = ? WHERE shop_id = ? AND item = ?", 
-                                  (new_quantity, shop_id, item))
-                else:
-                    # Insert new item
-                    cursor.execute("INSERT INTO shop_items (shop_id, item, quantity, price) VALUES (?, ?, ?, ?)",
-                                  (shop_id, item, quantity, 0.0))  # Default price
-        
+            cursor.execute("INSERT INTO shop_items (shop_id, item, quantity) VALUES (?, ?, ?)", (shop_id, item, quantity))
             self.db_connection.commit()
             cursor.close()
-            self.logger.info("Added items to shop {}".format(shop_id))
-        except SQLException, e:
-            self.log_sql_error(e, "SQL error adding items to shop")
+            self.logger.info("Added {} of {} to shop {}".format(quantity, item, shop_id))
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error while adding item to shop")
         finally:
             if self.db_connection:
                 try:
                     self.db_connection.close()
-                except SQLException, e:
+                except SQLException as e:
                     self.log_sql_error(e, "Failed to close database connection")
+
+    def remove_item_from_shop(self, shop_id, item):
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
+            cursor = self.db_connection.cursor()
+            cursor.execute("DELETE FROM shop_items WHERE shop_id = ? AND item = ?", (shop_id, item))
+            self.db_connection.commit()
+            cursor.close()
+            self.logger.info("Removed {} from shop {}".format(item, shop_id))
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error while removing item from shop")
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException as e:
+                    self.log_sql_error(e, "Failed to close database connection")
+
+    def update_item_quantity(self, shop_id, item, new_quantity):
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
+            cursor = self.db_connection.cursor()
+            cursor.execute("UPDATE shop_items SET quantity = ? WHERE shop_id = ? AND item = ?", (new_quantity, shop_id, item))
+            self.db_connection.commit()
+            cursor.close()
+            self.logger.info("Updated {} quantity to {} in shop {}".format(item, new_quantity, shop_id))
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error while updating item quantity")
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException as e:
+                    self.log_sql_error(e, "Failed to close database connection")
+
+    def add_items_to_shop(self, shop_id, items):
+        for item, quantity in items.items():
+            self.add_item_to_shop(shop_id, item, quantity)
 
     def remove_items_from_shop(self, shop_id, items):
-        try:
-            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
-            cursor = self.db_connection.cursor()
-            
-            for item in items:
-                cursor.execute("DELETE FROM shop_items WHERE shop_id = ? AND item = ?", (shop_id, item))
-            
-            # Check if shop is now empty
-            cursor.execute("SELECT COUNT(*) FROM shop_items WHERE shop_id = ?", (shop_id,))
-            if cursor.fetchone()[0] == 0:
-                cursor.execute("DELETE FROM shops WHERE id = ?", (shop_id,))
-            
-            self.db_connection.commit()
-            cursor.close()
-            self.logger.info("Removed items from shop {}".format(shop_id))
-        except SQLException, e:
-            self.log_sql_error(e, "SQL error removing items from shop")
-        finally:
-            if self.db_connection:
-                try:
-                    self.db_connection.close()
-                except SQLException, e:
-                    self.log_sql_error(e, "Failed to close database connection")
+        for item in items:
+            self.remove_item_from_shop(shop_id, item)
 
     def update_shop_items(self, shop_id, items):
-        try:
-            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
-            cursor = self.db_connection.cursor()
-            
-            for item, (quantity, price) in items.items():
-                cursor.execute("UPDATE shop_items SET quantity = ?, price = ? WHERE shop_id = ? AND item = ?",
-                              (quantity, price, shop_id, item))
-            
-            self.db_connection.commit()
-            cursor.close()
-            self.logger.info("Updated items in shop {}".format(shop_id))
-        except SQLException, e:
-            self.log_sql_error(e, "SQL error updating shop items")
-        finally:
-            if self.db_connection:
-                try:
-                    self.db_connection.close()
-                except SQLException, e:
-                    self.log_sql_error(e, "Failed to close database connection")
+        for item, (quantity, price) in items.items():
+            self.update_item_quantity(shop_id, item, quantity)
 
     def get_shop_by_location(self, location):
         try:
