@@ -350,38 +350,38 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         self.config_manager.save_config("config.yml")
         self.logger.info("Configuration saved to '{}'".format(CONFIG_FILE))
 
-def setup_database(self):
-    try:
-        self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
-        statement = self.db_connection.createStatement()
-        
-        # Create shops table
-        create_table_sql = """
-        CREATE TABLE IF NOT EXISTS shops (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            owner TEXT,
-            location TEXT UNIQUE,
-            is_admin_shop INTEGER
-        )
-        """
-        statement.executeUpdate(create_table_sql)
-        
-        # Create shop_items table
-        create_table_sql = """
-        CREATE TABLE IF NOT EXISTS shop_items (
-            shop_id INTEGER,
-            item TEXT,
-            quantity INTEGER,
-            price REAL,
-            FOREIGN KEY(shop_id) REFERENCES shops(id)
-        )
-        """
-        statement.executeUpdate(create_table_sql)
-        
-        self.db_connection.close()
-        self.logger.info("Database and tables created successfully.")
-    except SQLException, e:
-        self.logger.severe("An error occurred setting up the database: {}".format(e.getMessage()))
+    def setup_database(self):
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
+            statement = self.db_connection.createStatement()
+            
+            # Create shops table
+            create_table_sql = """
+            CREATE TABLE IF NOT EXISTS shops (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                owner TEXT,
+                location TEXT UNIQUE,
+                is_admin_shop INTEGER
+            )
+            """
+            statement.executeUpdate(create_table_sql)
+            
+            # Create shop_items table
+            create_table_sql = """
+            CREATE TABLE IF NOT EXISTS shop_items (
+                shop_id INTEGER,
+                item TEXT,
+                quantity INTEGER,
+                price REAL,
+                FOREIGN KEY(shop_id) REFERENCES shops(id)
+            )
+            """
+            statement.executeUpdate(create_table_sql)
+            
+            self.db_connection.close()
+            self.logger.info("Database and tables created successfully.")
+        except SQLException, e:
+            self.logger.severe("An error occurred setting up the database: {}".format(e.getMessage()))
 
     def load_shop_locations(self):
         self.shop_locations.clear()
@@ -441,33 +441,33 @@ def setup_database(self):
                 except SQLException, e:
                     self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
 
-def create_shop(self, owner, location, items, price, is_admin_shop):
-    try:
-        self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
-        cursor = self.db_connection.cursor()
-        
-        # Insert shop
-        cursor.execute("INSERT INTO shops (owner, location, is_admin_shop) VALUES (?, ?, ?)",
-                      (owner, location, is_admin_shop))
-        shop_id = cursor.lastrowid
-        
-        # Insert items
-        for item, quantity in items.items():
-            cursor.execute("INSERT INTO shop_items (shop_id, item, quantity, price) VALUES (?, ?, ?, ?)",
-                          (shop_id, item, quantity, price))
-        
-        self.db_connection.commit()
-        cursor.close()
-        self.load_shop_locations()
-        self.logger.info("Shop created at {}".format(location))
-    except SQLException, e:
-        self.logger.severe("SQL error creating shop: {}".format(e.getMessage()))
-    finally:
-        if self.db_connection:
-            try:
-                self.db_connection.close()
-            except SQLException, e:
-                self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+    def create_shop(self, owner, location, items, price, is_admin_shop):
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
+            cursor = self.db_connection.cursor()
+            
+            # Insert shop
+            cursor.execute("INSERT INTO shops (owner, location, is_admin_shop) VALUES (?, ?, ?)",
+                          (owner, location, is_admin_shop))
+            shop_id = cursor.lastrowid
+            
+            # Insert items
+            for item, quantity in items.items():
+                cursor.execute("INSERT INTO shop_items (shop_id, item, quantity, price) VALUES (?, ?, ?, ?)",
+                              (shop_id, item, quantity, price))
+            
+            self.db_connection.commit()
+            cursor.close()
+            self.load_shop_locations()
+            self.logger.info("Shop created at {}".format(location))
+        except SQLException, e:
+            self.logger.severe("SQL error creating shop: {}".format(e.getMessage()))
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException, e:
+                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
 
     def setup_economy(self):
         if not has_vault:
@@ -527,6 +527,61 @@ def create_shop(self, owner, location, items, price, is_admin_shop):
             return self.permission.has(player, permission_node)
         return player.hasPermission(permission_node)
 
+    def scan_items_in_chest(self, inventory):
+        items = {}
+        for item_stack in inventory.getContents():
+            if item_stack is not None:
+                item_name = item_stack.getType().name()
+                quantity = item_stack.getAmount()
+                if item_name in items:
+                    items[item_name] += quantity
+                else:
+                    items[item_name] = quantity
+        return items
+
+    def onSignChange(self, event):
+        player = event.getPlayer()
+        sign = event.getSign()
+        sign_text = event.getLine(0)
+
+        if sign_text != self.shop_identifier_sign_text:
+            return
+
+        block_below = sign.getBlock().getRelative(BlockFace.DOWN)
+        if block_below.getType() != self.shop_chest_material:
+            player.sendMessage(self.colorize("&cYou must place the sign directly on a chest."))
+            event.setCancelled(True)
+            return
+
+        if not self.has_permission(player, "chestshop.create"):
+            player.sendMessage(self.colorize(self.message_no_permission))
+            event.setCancelled(True)
+            return
+
+        chest = block_below.getState()
+        if not isinstance(chest, Chest):
+            player.sendMessage(self.colorize("&cYou must place the sign on a chest."))
+            event.setCancelled(True)
+            return
+
+        inventory = chest.getInventory()
+        items = self.scan_items_in_chest(inventory)
+
+        if not items:
+            player.sendMessage(self.colorize("&cYou must place items in the chest."))
+            event.setCancelled(True)
+            return
+
+        # Store the shop location and items for price setting
+        self.pending_price_settings[player.getName()] = {
+            "location": str(block_below.getLocation()),
+            "items": items,
+            "sign": sign
+        }
+
+        player.sendMessage(self.colorize("&aShop sign created! Please enter the total price for all items in chat."))
+        event.setCancelled(True)
+
     # No @EventHandler decorator!
     def onPlayerInteract(self, event):
         action = event.getAction()
@@ -555,175 +610,164 @@ def create_shop(self, owner, location, items, price, is_admin_shop):
                     return True
         return False
 
-def handle_shop_interaction(self, player, chest_block):
-    location = chest_block.getLocation()
-    shops = self.get_shops()
-    
-    for shop in shops:
-        if shop['location'] == str(location):
-            if self.economy and has_vault:
-                if self.economy.has(player, shop['total_price']):
-                    try:
-                        result = self.economy.withdrawPlayer(player, shop['total_price'])
-                        if result.transactionSuccess():
-                            # Give items to player
-                            for item in shop['items']:
-                                item_stack = ItemStack(Material.getMaterial(item['item']), item['quantity'])
-                                overflow = player.getInventory().addItem(item_stack)
-                                if overflow and not overflow.isEmpty():
-                                    for item in overflow.values():
-                                        player.getWorld().dropItem(player.getLocation(), item)
-                                    player.sendMessage(self.colorize("&cYour inventory is full! Some items were dropped."))
-                            player.sendMessage(self.colorize("&aYou have purchased the items for ${}".format(shop['total_price'])))
-                        else:
-                            player.sendMessage(self.colorize("&cVault Error: {}".format(result.errorMessage)))
-                            self.logger.warning("Vault transaction failed for {}: {}".format(player.getName(), result.errorMessage))
-                    except Exception, e:
-                        player.sendMessage(self.colorize("&cAn error occurred during the transaction: {}".format(e.getMessage())))
-                        self.logger.severe("An error occurred during the transaction for {}: {}".format(player.getName(), e.getMessage()))
+    def handle_shop_interaction(self, player, chest_block):
+        location = chest_block.getLocation()
+        shops = self.get_shops()
+        
+        for shop in shops:
+            if shop['location'] == str(location):
+                if self.economy and has_vault:
+                    if self.economy.has(player, shop['total_price']):
+                        try:
+                            result = self.economy.withdrawPlayer(player, shop['total_price'])
+                            if result.transactionSuccess():
+                                # Give items to player
+                                for item in shop['items']:
+                                    item_stack = ItemStack(Material.getMaterial(item['item']), item['quantity'])
+                                    overflow = player.getInventory().addItem(item_stack)
+                                    if overflow and not overflow.isEmpty():
+                                        for item in overflow.values():
+                                            player.getWorld().dropItem(player.getLocation(), item)
+                                        player.sendMessage(self.colorize("&cYour inventory is full! Some items were dropped."))
+                                player.sendMessage(self.colorize("&aYou have purchased the items for ${}".format(shop['total_price'])))
+                            else:
+                                player.sendMessage(self.colorize("&cVault Error: {}".format(result.errorMessage)))
+                                self.logger.warning("Vault transaction failed for {}: {}".format(player.getName(), result.errorMessage))
+                        except Exception, e:
+                            player.sendMessage(self.colorize("&cAn error occurred during the transaction: {}".format(e.getMessage())))
+                            self.logger.severe("An error occurred during the transaction for {}: {}".format(player.getName(), e.getMessage()))
                 else:
-                    player.sendMessage(self.colorize("&cYou do not have enough money to purchase these items."))
-            elif not has_vault:
-                player.sendMessage(self.colorize("&cVault is not installed on this server!"))
-                self.logger.warning("handle_shop_interaction called without Vault!")
+                    player.sendMessage(self.colorize("&cVault is not installed on this server!"))
+                    self.logger.warning("handle_shop_interaction called without Vault!")
+                    return
                 return
-            return
-    player.sendMessage(self.colorize("&cNo shop found at this location."))
+        player.sendMessage(self.colorize("&cNo shop found at this location."))
 
     def handle_shop_break_attempt(self, player, chest_block):
         player.sendMessage(self.colorize("&c&lYou cannot break shop chests directly!"))
         player.sendMessage(self.colorize("&7Interact (right-click) to use the shop."))
 
     # No @EventHandler decorator!
-def onSignChange(self, event):
-    player = event.getPlayer()
-    sign = event.getSign()
-    sign_text = event.getLine(0)
+    def onSignChange(self, event):
+        player = event.getPlayer()
+        sign = event.getSign()
+        sign_text = event.getLine(0)
 
-    if sign_text != self.shop_identifier_sign_text:
-        return
+        if sign_text != self.shop_identifier_sign_text:
+            return
 
-    block_below = sign.getBlock().getRelative(BlockFace.DOWN)
-    if block_below.getType() != self.shop_chest_material:
-        player.sendMessage(self.colorize("&cYou must place the sign directly on a chest."))
+        block_below = sign.getBlock().getRelative(BlockFace.DOWN)
+        if block_below.getType() != self.shop_chest_material:
+            player.sendMessage(self.colorize("&cYou must place the sign directly on a chest."))
+            event.setCancelled(True)
+            return
+
+        if not self.has_permission(player, "chestshop.create"):
+            player.sendMessage(self.colorize(self.message_no_permission))
+            event.setCancelled(True)
+            return
+
+        chest = block_below.getState()
+        if not isinstance(chest, Chest):
+            player.sendMessage(self.colorize("&cYou must place the sign on a chest."))
+            event.setCancelled(True)
+            return
+
+        inventory = chest.getInventory()
+        items = self.scan_items_in_chest(inventory)
+
+        if not items:
+            player.sendMessage(self.colorize("&cYou must place items in the chest."))
+            event.setCancelled(True)
+            return
+
+        # Store the shop location and items for price setting
+        self.pending_price_settings[player.getName()] = {
+            "location": str(block_below.getLocation()),
+            "items": items,
+            "sign": sign
+        }
+
+        player.sendMessage(self.colorize("&aShop sign created! Please enter the total price for all items in chat."))
         event.setCancelled(True)
-        return
 
-    if not self.has_permission(player, "chestshop.create"):
-        player.sendMessage(self.colorize(self.message_no_permission))
-        event.setCancelled(True)
-        return
-
-    chest = block_below.getState()
-    if not isinstance(chest, Chest):
-        player.sendMessage(self.colorize("&cYou must place the sign on a chest."))
-        event.setCancelled(True)
-        return
-
-    inventory = chest.getInventory()
-    items = {}
-    
-    # Scan all items in the chest
-    for item_stack in inventory.getContents():
-        if item_stack is not None:
-            item_name = item_stack.getType().name()
-            quantity = item_stack.getAmount()
-            if item_name in items:
-                items[item_name] += quantity
-            else:
-                items[item_name] = quantity
-
-    if not items:
-        player.sendMessage(self.colorize("&cYou must place items in the chest."))
-        event.setCancelled(True)
-        return
-
-    # Store the shop location and items for price setting
-    self.pending_price_settings[player.getName()] = {
-        "location": str(block_below.getLocation()),
-        "items": items,
-        "sign": sign
-    }
-
-    player.sendMessage(self.colorize("&aShop sign created! Please enter the total price for all items in chat."))
-    event.setCancelled(True)
-def add_items_to_shop(self, shop_id, items):
-    try:
-        self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
-        cursor = self.db_connection.cursor()
-        
-        for item, quantity in items.items():
-            # Check if item already exists
-            cursor.execute("SELECT quantity FROM shop_items WHERE shop_id = ? AND item = ?", (shop_id, item))
-            existing = cursor.fetchone()
+    def add_items_to_shop(self, shop_id, items):
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
+            cursor = self.db_connection.cursor()
             
-            if existing:
-                # Update quantity
-                new_quantity = existing[0] + quantity
-                cursor.execute("UPDATE shop_items SET quantity = ? WHERE shop_id = ? AND item = ?", 
-                              (new_quantity, shop_id, item))
-            else:
-                # Insert new item
-                cursor.execute("INSERT INTO shop_items (shop_id, item, quantity, price) VALUES (?, ?, ?, ?)",
-                              (shop_id, item, quantity, 0.0))  # Default price
+            for item, quantity in items.items():
+                # Check if item already exists
+                cursor.execute("SELECT quantity FROM shop_items WHERE shop_id = ? AND item = ?", (shop_id, item))
+                existing = cursor.fetchone()
+                
+                if existing:
+                    # Update quantity
+                    new_quantity = existing[0] + quantity
+                    cursor.execute("UPDATE shop_items SET quantity = ? WHERE shop_id = ? AND item = ?", 
+                                  (new_quantity, shop_id, item))
+                else:
+                    # Insert new item
+                    cursor.execute("INSERT INTO shop_items (shop_id, item, quantity, price) VALUES (?, ?, ?, ?)",
+                                  (shop_id, item, quantity, 0.0))  # Default price
         
-        self.db_connection.commit()
-        cursor.close()
-        self.logger.info("Added items to shop {}".format(shop_id))
-    except SQLException, e:
-        self.logger.severe("SQL error adding items to shop: {}".format(e.getMessage()))
-    finally:
-        if self.db_connection:
-            try:
-                self.db_connection.close()
-            except SQLException, e:
-                self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+            self.db_connection.commit()
+            cursor.close()
+            self.logger.info("Added items to shop {}".format(shop_id))
+        except SQLException, e:
+            self.logger.severe("SQL error adding items to shop: {}".format(e.getMessage()))
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException, e:
+                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
 
-def remove_items_from_shop(self, shop_id, items):
-    try:
-        self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
-        cursor = self.db_connection.cursor()
-        
-        for item in items:
-            cursor.execute("DELETE FROM shop_items WHERE shop_id = ? AND item = ?", (shop_id, item))
-        
-        # Check if shop is now empty
-        cursor.execute("SELECT COUNT(*) FROM shop_items WHERE shop_id = ?", (shop_id,))
-        if cursor.fetchone()[0] == 0:
-            cursor.execute("DELETE FROM shops WHERE id = ?", (shop_id,))
-        
-        self.db_connection.commit()
-        cursor.close()
-        self.logger.info("Removed items from shop {}".format(shop_id))
-    except SQLException, e:
-        self.logger.severe("SQL error removing items from shop: {}".format(e.getMessage()))
-    finally:
-        if self.db_connection:
-            try:
-                self.db_connection.close()
-            except SQLException, e:
-                self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+    def remove_items_from_shop(self, shop_id, items):
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
+            cursor = self.db_connection.cursor()
+            
+            for item in items:
+                cursor.execute("DELETE FROM shop_items WHERE shop_id = ? AND item = ?", (shop_id, item))
+            
+            # Check if shop is now empty
+            cursor.execute("SELECT COUNT(*) FROM shop_items WHERE shop_id = ?", (shop_id,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute("DELETE FROM shops WHERE id = ?", (shop_id,))
+            
+            self.db_connection.commit()
+            cursor.close()
+            self.logger.info("Removed items from shop {}".format(shop_id))
+        except SQLException, e:
+            self.logger.severe("SQL error removing items from shop: {}".format(e.getMessage()))
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException, e:
+                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
 
-def update_shop_items(self, shop_id, items):
-    try:
-        self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
-        cursor = self.db_connection.cursor()
-        
-        for item, (quantity, price) in items.items():
-            cursor.execute("UPDATE shop_items SET quantity = ?, price = ? WHERE shop_id = ? AND item = ?",
-                          (quantity, price, shop_id, item))
-        
-        self.db_connection.commit()
-        cursor.close()
-        self.logger.info("Updated items in shop {}".format(shop_id))
-    except SQLException, e:
-        self.logger.severe("SQL error updating shop items: {}".format(e.getMessage()))
-    finally:
-        if self.db_connection:
-            try:
-                self.db_connection.close()
-            except SQLException, e:
-                self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
+    def update_shop_items(self, shop_id, items):
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:E:/1.19.4/plugins/PySpigot/scripts/database.db")
+            cursor = self.db_connection.cursor()
+            
+            for item, (quantity, price) in items.items():
+                cursor.execute("UPDATE shop_items SET quantity = ?, price = ? WHERE shop_id = ? AND item = ?",
+                              (quantity, price, shop_id, item))
+            
+            self.db_connection.commit()
+            cursor.close()
+            self.logger.info("Updated items in shop {}".format(shop_id))
+        except SQLException, e:
+            self.logger.severe("SQL error updating shop items: {}".format(e.getMessage()))
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException, e:
+                    self.logger.severe("Failed to close database connection: {}".format(e.getMessage()))
 
     def get_shop_by_location(self, location):
         try:
