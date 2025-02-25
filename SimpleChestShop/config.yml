@@ -1,5 +1,7 @@
 # Configuration file for SimpleChestShop plugin
 
+database_path: "plugins/PySpigot/scripts/SimpleChestShop/database.db" # Database location
+
 # Material to be used for shop chests.
 shop_chest_material: CHEST  # The type of block that will act as the shop chest.
 

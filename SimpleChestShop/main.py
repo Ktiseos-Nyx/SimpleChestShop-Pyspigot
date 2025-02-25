@@ -35,7 +35,7 @@ try:
 except ImportError:
     has_luckperms = False
     LuckPerms = None
-    print "[ChestShop] LuckPerms not found. Disabling LuckPerms integration."  # Correct Python 2 print
+    print("[ChestShop] LuckPerms not found. Disabling LuckPerms integration.")
 
 # Third-party imports
 import pyspigot as ps
@@ -52,7 +52,7 @@ try:
     has_vault = True
 except ImportError:
     has_vault = False
-    print "[ChestShop] Vault not found. Disabling Economy, Permission and Chat integration."  # Correct Python 2 print
+    print("[ChestShop] Vault not found. Disabling Economy, Permission and Chat integration.")  # Correct Python 2 print
 
 from com.palmergames.bukkit.towny import TownyUniverse
 # from net.milkbowl.vaultunlocked.api import VaultUnlockedAPI # If you use it
@@ -380,21 +380,32 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             
             self.db_connection.close()
             self.logger.info("Database and tables created successfully.")
-        except SQLException, e:
+        except SQLException as e:
             self.logger.severe("An error occurred setting up the database: {}".format(e.getMessage()))
 
     def with_database_connection(self, func, *args, **kwargs):
-    try:
-        self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
-        return func(self.db_connection, *args, **kwargs)
-    except SQLException as e:
-        self.log_sql_error(e, "SQL error")
-    finally:
-        if self.db_connection:
-            try:
-                self.db_connection.close()
-            except SQLException as e:
-                self.log_sql_error(e, "Failed to close database connection")
+        """
+        Establishes a database connection and executes a given function with that connection.
+
+        Parameters:
+        - func (callable): The function to execute with the database connection.
+        - *args: Additional positional arguments to pass to the function.
+        - **kwargs: Additional keyword arguments to pass to the function.
+
+        Returns:
+        - The return value of the executed function, if successful.
+        """
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
+            return func(self.db_connection, *args, **kwargs)
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error")
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException as e:
+                    self.log_sql_error(e, "Failed to close database connection")
 
     def load_shop_locations(self):
         self.shop_locations.clear()
@@ -403,9 +414,22 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             self.shop_locations.add(shop[2])
 
     def log_sql_error(self, e, custom_message):
+        """
+        Logs an SQL error message.
+
+        Parameters:
+        - e (SQLException): The exception that was raised.
+        - custom_message (str): A custom message to include in the log.
+        """
         self.logger.severe("{}: {}".format(custom_message, e.getMessage()))
 
     def get_shops(self):
+        """
+        Retrieves all shops from the database.
+
+        Returns:
+        - list: A list of shops, where each shop is represented as a tuple.
+        """
         try:
             return self.with_database_connection(self._get_shops)
         except SQLException as e:
@@ -413,6 +437,15 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             return []
 
     def _get_shops(self, db_connection):
+        """
+        Helper method to fetch shops from the database.
+
+        Parameters:
+        - db_connection: The active database connection.
+
+        Returns:
+        - list: A list of shops fetched from the database.
+        """
         try:
             cursor = db_connection.cursor()
             cursor.execute("SELECT id, owner, location, is_admin_shop FROM shops")
@@ -424,12 +457,35 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             return []
 
     def add_shop(self, owner, location, is_admin_shop):
+        """
+        Adds a new shop to the database.
+
+        Parameters:
+        - owner (str): The name of the shop owner.
+        - location (str): The location of the shop.
+        - is_admin_shop (bool): Indicates if the shop is an admin shop.
+
+        Returns:
+        - None
+        """
         try:
             return self.with_database_connection(self._add_shop, owner, location, is_admin_shop)
         except SQLException as e:
             self.log_sql_error(e, "SQL error while adding shop")
 
     def _add_shop(self, db_connection, owner, location, is_admin_shop):
+        """
+        Helper method to insert a shop into the database.
+
+        Parameters:
+        - db_connection: The active database connection.
+        - owner (str): The name of the shop owner.
+        - location (str): The location of the shop.
+        - is_admin_shop (bool): Indicates if the shop is an admin shop.
+
+        Returns:
+        - None
+        """
         try:
             cursor = db_connection.cursor()
             cursor.execute("INSERT INTO shops (owner, location, is_admin_shop) VALUES (?, ?, ?)", (owner, location, is_admin_shop))
@@ -441,12 +497,31 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             self.log_sql_error(e, "SQL error while creating shop")
 
     def remove_shop(self, shop_id):
+        """
+        Removes a shop from the database.
+
+        Parameters:
+        - shop_id (int): The ID of the shop to remove.
+
+        Returns:
+        - None
+        """
         try:
             return self.with_database_connection(self._remove_shop, shop_id)
         except SQLException as e:
             self.log_sql_error(e, "SQL error while removing shop")
 
     def _remove_shop(self, db_connection, shop_id):
+        """
+        Helper method to delete a shop from the database.
+
+        Parameters:
+        - db_connection: The active database connection.
+        - shop_id (int): The ID of the shop to remove.
+
+        Returns:
+        - None
+        """
         try:
             cursor = db_connection.cursor()
             cursor.execute("DELETE FROM shops WHERE id = ?", (shop_id,))
@@ -455,33 +530,179 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         except SQLException as e:
             self.log_sql_error(e, "SQL error while removing shop")
 
-    def create_shop(self, owner, location, items, price, is_admin_shop):
+    def add_item_to_shop(self, shop_id, item, quantity):
+        """
+        Adds an item to the specified shop.
+
+        Parameters:
+        - shop_id (int): The ID of the shop.
+        - item (str): The name of the item to add.
+        - quantity (int): The quantity of the item to add.
+
+        Returns:
+        - None
+        """
         try:
             self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
             cursor = self.db_connection.cursor()
-            
-            # Insert shop
-            cursor.execute("INSERT INTO shops (owner, location, is_admin_shop) VALUES (?, ?, ?)",
-                          (owner, location, is_admin_shop))
-            shop_id = cursor.lastrowid
-            
-            # Insert items
-            for item, quantity in items.items():
-                cursor.execute("INSERT INTO shop_items (shop_id, item, quantity, price) VALUES (?, ?, ?, ?)",
-                              (shop_id, item, quantity, price))
-            
+            cursor.execute("INSERT INTO shop_items (shop_id, item, quantity) VALUES (?, ?, ?)", (shop_id, item, quantity))
             self.db_connection.commit()
             cursor.close()
-            self.load_shop_locations()
-            self.logger.info("Shop created at {}".format(location))
-        except SQLException, e:
-            self.log_sql_error(e, "SQL error creating shop")
+            self.logger.info("Added {} of {} to shop {}".format(quantity, item, shop_id))
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error while adding item to shop")
         finally:
             if self.db_connection:
                 try:
                     self.db_connection.close()
-                except SQLException, e:
+                except SQLException as e:
                     self.log_sql_error(e, "Failed to close database connection")
+
+    def remove_item_from_shop(self, shop_id, item):
+        """
+        Removes an item from the specified shop.
+
+        Parameters:
+        - shop_id (int): The ID of the shop.
+        - item (str): The name of the item to remove.
+
+        Returns:
+        - None
+        """
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
+            cursor = self.db_connection.cursor()
+            cursor.execute("DELETE FROM shop_items WHERE shop_id = ? AND item = ?", (shop_id, item))
+            self.db_connection.commit()
+            cursor.close()
+            self.logger.info("Removed {} from shop {}".format(item, shop_id))
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error while removing item from shop")
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException as e:
+                    self.log_sql_error(e, "Failed to close database connection")
+
+    def update_item_quantity(self, shop_id, item, new_quantity):
+        """
+        Updates the quantity of an item in the specified shop.
+
+        Parameters:
+        - shop_id (int): The ID of the shop.
+        - item (str): The name of the item to update.
+        - new_quantity (int): The new quantity of the item.
+
+        Returns:
+        - None
+        """
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
+            cursor = self.db_connection.cursor()
+            cursor.execute("UPDATE shop_items SET quantity = ? WHERE shop_id = ? AND item = ?", (new_quantity, shop_id, item))
+            self.db_connection.commit()
+            cursor.close()
+            self.logger.info("Updated {} quantity to {} in shop {}".format(item, new_quantity, shop_id))
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error while updating item quantity")
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException as e:
+                    self.log_sql_error(e, "Failed to close database connection")
+
+    def add_items_to_shop(self, shop_id, items):
+        """
+        Adds multiple items to the specified shop.
+
+        Parameters:
+        - shop_id (int): The ID of the shop.
+        - items (dict): A dictionary of items and their quantities to add.
+
+        Returns:
+        - None
+        """
+        for item, quantity in items.items():
+            if self.item_exists_in_shop(shop_id, item):
+                # Optionally, you could update the quantity instead of adding
+                self.update_item_quantity(shop_id, item, quantity)
+                self.logger.info(f'Item {item} already exists in shop {shop_id}. Updating quantity.')
+            else:
+                self.add_item_to_shop(shop_id, item, quantity)
+                self.logger.info(f'Item {item} added to shop {shop_id}.')
+
+    def remove_items_from_shop(self, shop_id, items):
+        """
+        Removes multiple items from the specified shop.
+
+        Parameters:
+        - shop_id (int): The ID of the shop.
+        - items (list): A list of items to remove.
+
+        Returns:
+        - None
+        """
+        for item in items:
+            if self.item_exists_in_shop(shop_id, item):
+                self.remove_item_from_shop(shop_id, item)
+                self.logger.info(f'Item {item} removed from shop {shop_id}.')
+            else:
+                self.logger.info(f'Item {item} does not exist in shop {shop_id}.')
+
+    def update_shop_items(self, shop_id, items):
+        """
+        Updates the quantities of multiple items in the specified shop.
+
+        Parameters:
+        - shop_id (int): The ID of the shop.
+        - items (dict): A dictionary of items and their new quantities.
+
+        Returns:
+        - None
+        """
+        for item, (quantity, price) in items.items():
+            if self.item_exists_in_shop(shop_id, item):
+                self.update_item_quantity(shop_id, item, quantity)
+                self.logger.info(f'Item {item} updated in shop {shop_id}.')
+            else:
+                self.logger.info(f'Item {item} does not exist in shop {shop_id}.')
+
+    def get_shop_by_location(self, location):
+        """
+        Retrieves a shop by its location.
+
+        Parameters:
+        - location (str): The location of the shop.
+
+        Returns:
+        - tuple: A tuple representing the shop, or None if not found.
+        """
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
+            cursor = self.db_connection.cursor()
+            cursor.execute("SELECT id, owner, location, is_admin_shop FROM shops WHERE location = ?", (location,))
+            shop = cursor.fetchone()
+            cursor.close()
+            if shop:
+                return shop
+            return None
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error")
+            return None  # Return None on error
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException as e:
+                    self.log_sql_error(e, "Failed to close database connection")
+
+    def load_shop_locations(self):
+        self.shop_locations.clear()
+        shops = self.get_shops()
+        for shop in shops:
+            self.shop_locations.add(shop[2])
 
     def setup_economy(self):
         if not has_vault:
@@ -502,7 +723,7 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
             try:
                 self.luckperms = LuckPerms.getApi()
                 self.logger.info("LuckPerms API found and enabled.")
-            except Exception, e:
+            except Exception as e:
                 self.logger.warning("LuckPerms API not found! Disabling LuckPerms integration. Error: {}".format(e))
                 self.luckperms = None
         elif has_vault:
@@ -647,7 +868,7 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
                             else:
                                 player.sendMessage(self.colorize("&cVault Error: {}".format(result.errorMessage)))
                                 self.logger.warning("Vault transaction failed for {}: {}".format(player.getName(), result.errorMessage))
-                        except Exception, e:
+                        except Exception as e:
                             player.sendMessage(self.colorize("&cAn error occurred during the transaction: {}".format(e.getMessage())))
                             self.logger.severe("An error occurred during the transaction for {}: {}".format(player.getName(), e.getMessage()))
                 else:
@@ -705,7 +926,7 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
         player.sendMessage(self.colorize("&aShop sign created! Please enter the total price for all items in chat."))
         event.setCancelled(True)
 
-    def add_item_to_shop(self, shop_id, item, quantity):
+    def create_shop(self, owner, location, items, price, is_admin_shop):
         try:
             self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
             cursor = self.db_connection.cursor()
@@ -755,20 +976,78 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
                     self.db_connection.close()
                 except SQLException as e:
                     self.log_sql_error(e, "Failed to close database connection")
-
+            # Insert shop
+            cursor.execute("INSERT INTO shops (owner, location, is_admin_shop) VALUES (?, ?, ?)",
+                          (owner, location, is_admin_shop))
+            shop_id = cursor.lastrowid
+            
+            # Insert items
     def add_items_to_shop(self, shop_id, items):
+        """
+        Adds multiple items to the specified shop.
+
+        Parameters:
+        - shop_id (int): The ID of the shop.
+        - items (dict): A dictionary of items and their quantities to add.
+
+        Returns:
+        - None
+        """
         for item, quantity in items.items():
-            self.add_item_to_shop(shop_id, item, quantity)
+            if self.item_exists_in_shop(shop_id, item):
+                # Optionally, you could update the quantity instead of adding
+                self.update_item_quantity(shop_id, item, quantity)
+                self.logger.info(f'Item {item} already exists in shop {shop_id}. Updating quantity.')
+            else:
+                self.add_item_to_shop(shop_id, item, quantity)
+                self.logger.info(f'Item {item} added to shop {shop_id}.')
 
     def remove_items_from_shop(self, shop_id, items):
+        """
+        Removes multiple items from the specified shop.
+
+        Parameters:
+        - shop_id (int): The ID of the shop.
+        - items (list): A list of items to remove.
+
+        Returns:
+        - None
+        """
         for item in items:
-            self.remove_item_from_shop(shop_id, item)
+            if self.item_exists_in_shop(shop_id, item):
+                self.remove_item_from_shop(shop_id, item)
+                self.logger.info(f'Item {item} removed from shop {shop_id}.')
+            else:
+                self.logger.info(f'Item {item} does not exist in shop {shop_id}.')
 
     def update_shop_items(self, shop_id, items):
+        """
+        Updates the quantities of multiple items in the specified shop.
+
+        Parameters:
+        - shop_id (int): The ID of the shop.
+        - items (dict): A dictionary of items and their new quantities.
+
+        Returns:
+        - None
+        """
         for item, (quantity, price) in items.items():
-            self.update_item_quantity(shop_id, item, quantity)
+            if self.item_exists_in_shop(shop_id, item):
+                self.update_item_quantity(shop_id, item, quantity)
+                self.logger.info(f'Item {item} updated in shop {shop_id}.')
+            else:
+                self.logger.info(f'Item {item} does not exist in shop {shop_id}.')
 
     def get_shop_by_location(self, location):
+        """
+        Retrieves a shop by its location.
+
+        Parameters:
+        - location (str): The location of the shop.
+
+        Returns:
+        - tuple: A tuple representing the shop, or None if not found.
+        """
         try:
             self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
             cursor = self.db_connection.cursor()
@@ -799,12 +1078,47 @@ class ChestShop(JavaPlugin, Listener):  # Correctly implements Listener
                 }
             else:
                 return None
-        except SQLException, e:
-            self.log_sql_error(e, "SQL error")
-            return None # Return None on error
+            self.load_shop_locations()
+            self.logger.info("Shop created at {}".format(location))
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error creating shop")
         finally:
             if self.db_connection:
                 try:
                     self.db_connection.close()
-                except SQLException, e:
+                except SQLException as e:
+                    self.log_sql_error(e, "Failed to close database connection")
+
+    def load_shop_locations(self):
+        self.shop_locations.clear()
+        shops = self.get_shops()
+        for shop in shops:
+            self.shop_locations.add(shop[2])
+
+    def item_exists_in_shop(self, shop_id, item):
+        """
+        Checks if an item exists in the specified shop.
+
+        Parameters:
+        - shop_id (int): The ID of the shop.
+        - item (str): The name of the item to check.
+
+        Returns:
+        - bool: True if the item exists, False otherwise.
+        """
+        try:
+            self.db_connection = DriverManager.getConnection("jdbc:sqlite:plugins/PySpigot/scripts/SimpleChestShop/database.db")
+            cursor = self.db_connection.cursor()
+            cursor.execute("SELECT COUNT(*) FROM shop_items WHERE shop_id = ? AND item = ?", (shop_id, item))
+            count = cursor.fetchone()[0]
+            cursor.close()
+            return count > 0  # Return True if count is greater than 0
+        except SQLException as e:
+            self.log_sql_error(e, "SQL error while checking item existence")
+            return False  # Return False on error
+        finally:
+            if self.db_connection:
+                try:
+                    self.db_connection.close()
+                except SQLException as e:
                     self.log_sql_error(e, "Failed to close database connection")
